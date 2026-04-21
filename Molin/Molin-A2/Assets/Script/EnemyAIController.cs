@@ -1,23 +1,27 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(Rigidbody))]
 public class EnemyAIController : MonoBehaviour
 {
-    public enum AIState { Chasing, Wandering }
+    // 状态机精简与升级：进攻、拉扯蓄力、战术撤退
+    public enum AIState { Chasing, Repositioning, Retreating }
 
-    [Header("Targeting & AI")]
-    public Transform player;
-    public float avoidDistance = 4f;
-    [Tooltip("基础悬崖探测距离。现在的探测距离会根据车速自动延长！")]
+    [Header("Targeting & Free-for-All (大逃杀索敌)")]
+    [Tooltip("每隔多久重新评估一次全场最佳目标")]
+    public float targetUpdateInterval = 0.5f;
+    [Tooltip("探测悬崖的动态基准距离")]
     public float baseLookAheadDistance = 4f;
     public float cliffCheckDepth = 2f;
+    [Tooltip("静态避障距离")]
+    public float obstacleAvoidDistance = 8f;
 
-    [Header("AI State Timers (战术拉扯)")]
-    [Tooltip("追击超时时间：追击这么久还没撞到，就主动放弃并开始游荡")]
-    public float chaseDuration = 3f;
-    [Tooltip("撞击得手后，或者超时放弃后，游荡调整的时间")]
-    public float wanderDuration = 2.5f;
-    [Tooltip("判定为‘有效攻击’的撞击阈值，对应你 CollisionManager 里的音效阈值")]
+    [Header("Tactical Timers (战术时间)")]
+    public Vector2 chaseTimeRange = new Vector2(4f, 6f);
+    [Tooltip("撞击后后撤的时间，防止粘连")]
+    public Vector2 retreatTimeRange = new Vector2(0.5f, 1.5f);
+    [Tooltip("为了下一次高能冲锋而拉开距离的时间")]
+    public Vector2 repositionTimeRange = new Vector2(1.5f, 2.5f);
     public float hitForceThreshold = 8f;
 
     [Header("Engine Power (同步玩家双段油门)")]
@@ -26,6 +30,7 @@ public class EnemyAIController : MonoBehaviour
     public float topEndAcceleration = 1200f;
     public float maxSpeed = 70f;
     public float turnSpeed = 150f;
+    public float speedForMaxTurn = 10f;
 
     [Header("Custom Physics (同步玩家)")]
     public float lateralGrip = 5f;
@@ -34,75 +39,82 @@ public class EnemyAIController : MonoBehaviour
     public float groundCheckDistance = 1.0f;
 
     private Rigidbody rb;
-    private Vector3 targetDirection;
     private bool isGrounded;
-    private bool isAvoidingCliff = false;
     private AIState currentState;
     private float stateTimer;
-    private Vector3 currentWanderTarget;
+
+    // 大逃杀专属变量
+    private Transform currentTarget;
+    private Rigidbody targetRb;
+    private float targetUpdateTimer;
+    private Vector3 tacticalWaypoint; // 战术走位目标点
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.centerOfMass = new Vector3(0, -0.5f, 0);
 
-        if (player == null)
-        {
-            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-            if (playerObj != null) player = playerObj.transform;
-        }
-
-        currentState = AIState.Chasing;
-        stateTimer = chaseDuration;
+        SwitchState(AIState.Chasing);
+        FindBestTarget();
     }
 
     void FixedUpdate()
     {
-        if (player == null) return;
+        // --- 1. 全员恶人：动态索敌 ---
+        targetUpdateTimer -= Time.fixedDeltaTime;
+        if (targetUpdateTimer <= 0)
+        {
+            FindBestTarget();
+            targetUpdateTimer = targetUpdateInterval;
+        }
 
+        // 如果场上真没目标了（比如都掉下去了），就在中心停着
+        if (currentTarget == null) return;
+
+        // --- 2. 物理环境同步 ---
         Vector3 rayStart = transform.position + Vector3.up * 0.1f;
         isGrounded = Physics.Raycast(rayStart, Vector3.down, groundCheckDistance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
 
         if (!isGrounded || rb.velocity.y > 0.1f)
-        {
             rb.AddForce(Vector3.down * downForce * rb.mass, ForceMode.Force);
-        }
 
         Vector3 lateralVelocity = transform.right * Vector3.Dot(rb.velocity, transform.right);
         rb.AddForce(-lateralVelocity * lateralGrip * rb.mass, ForceMode.Force);
 
         if (!isGrounded) return;
 
-        // --- 1. 战术状态机倒计时 ---
+        // --- 3. 反制僵局与状态机倒计时 ---
         stateTimer -= Time.fixedDeltaTime;
-        if (stateTimer <= 0)
+
+        // 【核心优化】：检测“二人转”僵局。
+        // 如果正在追击，且双方距离很近，但相对速度极低，说明卡在一起或在绕圈，立刻进入拉扯蓄力状态
+        if (currentState == AIState.Chasing && stateTimer < (chaseTimeRange.y - 1f))
         {
-            if (currentState == AIState.Chasing)
+            float distToTarget = Vector3.Distance(transform.position, currentTarget.position);
+            float relativeSpeed = (rb.velocity - (targetRb != null ? targetRb.velocity : Vector3.zero)).magnitude;
+
+            if (distToTarget < 6f && relativeSpeed < 5f)
             {
-                // 追击超时，强制放弃，转为游荡
-                ForceWander();
-            }
-            else
-            {
-                // 游荡结束，重新锁定玩家
-                currentState = AIState.Chasing;
-                stateTimer = chaseDuration + Random.Range(-0.5f, 1.0f);
+                SwitchState(AIState.Repositioning);
             }
         }
 
-        // --- 2. 决策树执行 ---
-        isAvoidingCliff = CheckForCliff();
+        if (stateTimer <= 0)
+        {
+            if (currentState == AIState.Chasing) SwitchState(AIState.Repositioning);
+            else SwitchState(AIState.Chasing);
+        }
+
+        // --- 4. 核心决策树 ---
+        bool isAvoidingCliff = CheckForCliff(out float dynamicLookAhead);
+        Vector3 targetDirection = Vector3.zero;
 
         if (isAvoidingCliff)
         {
+            // 悬崖逃生逻辑：强行指向场地绝对中心 (0,0,0)
             Vector3 dirToCenter = (Vector3.zero - transform.position).normalized;
             dirToCenter.y = 0;
             targetDirection = dirToCenter != Vector3.zero ? dirToCenter : -transform.forward;
-
-            if (currentState == AIState.Wandering)
-            {
-                currentWanderTarget = transform.position + targetDirection * 20f;
-            }
         }
         else
         {
@@ -110,104 +122,205 @@ public class EnemyAIController : MonoBehaviour
 
             if (currentState == AIState.Chasing)
             {
-                baseDirection = (player.position - transform.position).normalized;
+                // 预判追踪：预判目标 0.5 秒后的位置
+                Vector3 targetVelocity = targetRb != null ? targetRb.velocity : Vector3.zero;
+                Vector3 futurePos = currentTarget.position + targetVelocity * 0.5f;
+                baseDirection = (futurePos - transform.position).normalized;
             }
-            else if (currentState == AIState.Wandering)
+            else if (currentState == AIState.Repositioning)
             {
-                if (Vector3.Distance(transform.position, currentWanderTarget) < 5f)
+                // 拉扯蓄力：开向之前计算好的战术点，拉开距离
+                baseDirection = (tacticalWaypoint - transform.position).normalized;
+
+                // 如果已经到了战术点附近，提前结束拉扯，回头猛撞
+                if (Vector3.Distance(transform.position, tacticalWaypoint) < 4f)
                 {
-                    PickNewWanderTarget();
+                    SwitchState(AIState.Chasing);
                 }
-                baseDirection = (currentWanderTarget - transform.position).normalized;
+            }
+            else if (currentState == AIState.Retreating)
+            {
+                // 战术后撤：刚撞完，背对目标跑路
+                baseDirection = (transform.position - currentTarget.position).normalized;
             }
 
             baseDirection.y = 0;
-            targetDirection = CalculateAvoidance(baseDirection);
 
-            if (currentState == AIState.Wandering && targetDirection != baseDirection)
-            {
-                currentWanderTarget = transform.position + targetDirection * 15f;
-            }
+            // 静态避障 (忽略当前锁定的目标)
+            targetDirection = CalculateObstacleAvoidance(baseDirection.normalized);
         }
 
         MoveAndSteer(targetDirection, isAvoidingCliff);
     }
 
-    // --- 新增：强制进入游荡状态 ---
-    private void ForceWander()
+    // --- 新增：大逃杀全域索敌机制 ---
+    private void FindBestTarget()
     {
-        currentState = AIState.Wandering;
-        stateTimer = wanderDuration + Random.Range(0f, 1f);
-        PickNewWanderTarget();
+        // 寻找所有的玩家和其他敌人
+        List<GameObject> allFighters = new List<GameObject>();
+        allFighters.AddRange(GameObject.FindGameObjectsWithTag("Player"));
+        allFighters.AddRange(GameObject.FindGameObjectsWithTag("Enemy"));
+
+        float closestDist = float.MaxValue;
+        Transform bestTarget = null;
+
+        foreach (GameObject fighter in allFighters)
+        {
+            // 忽略自己
+            if (fighter == this.gameObject) continue;
+
+            // 忽略已经掉下悬崖的车 (假设低于 -5f 算掉落)
+            if (fighter.transform.position.y < -5f) continue;
+
+            float dist = Vector3.Distance(transform.position, fighter.transform.position);
+
+            // 优先选择距离最近的
+            if (dist < closestDist)
+            {
+                closestDist = dist;
+                bestTarget = fighter.transform;
+            }
+        }
+
+        currentTarget = bestTarget;
+        if (currentTarget != null)
+        {
+            targetRb = currentTarget.GetComponent<Rigidbody>();
+        }
     }
 
-    // --- 新增：成功撞击玩家后的“一击脱离” ---
+    private void SwitchState(AIState newState)
+    {
+        currentState = newState;
+
+        switch (newState)
+        {
+            case AIState.Chasing:
+                stateTimer = Random.Range(chaseTimeRange.x, chaseTimeRange.y);
+                break;
+            case AIState.Retreating:
+                stateTimer = Random.Range(retreatTimeRange.x, retreatTimeRange.y);
+                break;
+            case AIState.Repositioning:
+                stateTimer = Random.Range(repositionTimeRange.x, repositionTimeRange.y);
+                CalculateTacticalWaypoint();
+                break;
+        }
+    }
+
+    private void CalculateTacticalWaypoint()
+    {
+        if (currentTarget == null) return;
+
+        // 计算一个能获得绝佳加速距离的战术点
+        // 策略：背对目标，并稍微偏向场地的中心，防止把自己逼到死角
+        Vector3 awayFromTarget = (transform.position - currentTarget.position).normalized;
+        Vector3 towardCenter = (Vector3.zero - transform.position).normalized;
+
+        // 混合方向：70% 远离目标，30% 偏向场地中心
+        Vector3 mixedDirection = (awayFromTarget * 0.7f + towardCenter * 0.3f).normalized;
+        mixedDirection.y = 0;
+
+        // 设定战术点在 25 米开外，给予足够的直线加速空间
+        tacticalWaypoint = transform.position + mixedDirection * 25f;
+    }
+
     void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.CompareTag("Player"))
+        // 只要撞到的是玩家或敌人，且力度足够，就立刻后撤
+        if (collision.gameObject.CompareTag("Player") || collision.gameObject.CompareTag("Enemy"))
         {
-            // 如果撞击力度达到了触发音效的阈值
             if (collision.relativeVelocity.magnitude >= hitForceThreshold)
             {
-                // 如果当前正在追击，立刻满足，转为游荡撤退
+                // 如果当前正在追击，立刻转为后撤，防止粘连
                 if (currentState == AIState.Chasing)
                 {
-                    ForceWander();
+                    SwitchState(AIState.Retreating);
                 }
             }
         }
     }
 
-    private void PickNewWanderTarget()
+    private Vector3 CalculateObstacleAvoidance(Vector3 currentDirection)
     {
-        float randomAngle = Random.Range(-70f, 70f);
-        Vector3 randomDir = Quaternion.Euler(0, randomAngle, 0) * transform.forward;
-        currentWanderTarget = transform.position + randomDir * 25f;
+        Vector3 finalDirection = currentDirection;
+        Vector3 forward = transform.forward;
+        forward.y = 0;
+        forward.Normalize();
+
+        Vector3 leftAngle = Quaternion.Euler(0, -35, 0) * forward;
+        Vector3 rightAngle = Quaternion.Euler(0, 35, 0) * forward;
+        Vector3 origin = transform.position + Vector3.up * 0.5f;
+
+        bool isBlockedCenter = IsObstacle(origin, forward, obstacleAvoidDistance);
+        bool isBlockedLeft = IsObstacle(origin, leftAngle, obstacleAvoidDistance * 0.8f);
+        bool isBlockedRight = IsObstacle(origin, rightAngle, obstacleAvoidDistance * 0.8f);
+
+        if (isBlockedCenter)
+        {
+            if (!isBlockedLeft) finalDirection = Quaternion.Euler(0, -75, 0) * forward;
+            else if (!isBlockedRight) finalDirection = Quaternion.Euler(0, 75, 0) * forward;
+            else finalDirection = -forward;
+        }
+        else if (isBlockedLeft)
+        {
+            finalDirection = Quaternion.Euler(0, 45, 0) * forward;
+        }
+        else if (isBlockedRight)
+        {
+            finalDirection = Quaternion.Euler(0, -45, 0) * forward;
+        }
+
+        return finalDirection.normalized;
     }
 
-    private bool CheckForCliff()
+    private bool IsObstacle(Vector3 origin, Vector3 dir, float dist)
     {
-        // 核心修复：根据当前速度动态延长雷达探测距离（开得越快，探测越远）
+        if (Physics.Raycast(origin, dir, out RaycastHit hit, dist, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+        {
+            // 避障逻辑：忽略自己。
+            // 【核心】：不要避开当前正在追击的目标，否则就撞不上去了！
+            if (hit.transform == currentTarget) return false;
+
+            if (!hit.transform.IsChildOf(this.transform) && hit.transform != this.transform && hit.normal.y < 0.5f)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool CheckForCliff(out float dynamicLookAhead)
+    {
         float currentSpeed = rb.velocity.magnitude;
-        float dynamicLookAhead = baseLookAheadDistance + (currentSpeed * 0.1f);
+        dynamicLookAhead = baseLookAheadDistance + (currentSpeed * 0.1f);
 
-        // 核心修复：三点式扇形探测，涵盖车头左、中、右，防止漂移时侧漏
         Vector3 centerProbe = transform.position + transform.forward * dynamicLookAhead;
-        Vector3 leftProbe = transform.position + (transform.forward + transform.right * -0.5f).normalized * dynamicLookAhead;
-        Vector3 rightProbe = transform.position + (transform.forward + transform.right * 0.5f).normalized * dynamicLookAhead;
+        Vector3 leftProbe = transform.position + (transform.forward + transform.right * -0.6f).normalized * dynamicLookAhead;
+        Vector3 rightProbe = transform.position + (transform.forward + transform.right * 0.6f).normalized * dynamicLookAhead;
 
-        centerProbe.y += 0.5f;
-        leftProbe.y += 0.5f;
-        rightProbe.y += 0.5f;
+        centerProbe.y += 0.5f; leftProbe.y += 0.5f; rightProbe.y += 0.5f;
 
         bool hitCenter = Physics.Raycast(centerProbe, Vector3.down, cliffCheckDepth, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
         bool hitLeft = Physics.Raycast(leftProbe, Vector3.down, cliffCheckDepth, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
         bool hitRight = Physics.Raycast(rightProbe, Vector3.down, cliffCheckDepth, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
 
-        // 只要任何一个探测点踩空，就判定前方是悬崖
-        return !(hitCenter && hitLeft && hitRight);
-    }
+        bool cliffDanger = !(hitCenter && hitLeft && hitRight);
 
-    private Vector3 CalculateAvoidance(Vector3 baseDirection)
-    {
-        Vector3 finalDirection = baseDirection;
-        Vector3 forward = transform.forward;
-        Vector3 leftAngle = Quaternion.Euler(0, -35, 0) * forward;
-        Vector3 rightAngle = Quaternion.Euler(0, 35, 0) * forward;
-
-        RaycastHit centerHit;
-        bool hitCenter = Physics.Raycast(transform.position, forward, out centerHit, avoidDistance);
-        bool hitLeft = Physics.Raycast(transform.position, leftAngle, out _, avoidDistance);
-        bool hitRight = Physics.Raycast(transform.position, rightAngle, out _, avoidDistance);
-
-        if (hitCenter && centerHit.collider.CompareTag("Enemy"))
+        // --- 同归于尽终极判定 ---
+        if (cliffDanger && currentState == AIState.Chasing && currentTarget != null)
         {
-            if (!hitLeft) finalDirection = Quaternion.Euler(0, -75, 0) * forward;
-            else if (!hitRight) finalDirection = Quaternion.Euler(0, 75, 0) * forward;
-            else finalDirection = -forward;
+            // 如果悬崖前方正好是我当前锁定的目标，直接撞下去！
+            if (Physics.Raycast(transform.position + Vector3.up * 0.5f, transform.forward, out RaycastHit hit, dynamicLookAhead + 5f))
+            {
+                if (hit.transform == currentTarget)
+                {
+                    cliffDanger = false;
+                }
+            }
         }
 
-        return finalDirection.normalized;
+        return cliffDanger;
     }
 
     private void MoveAndSteer(Vector3 direction, bool cliffDanger)
@@ -215,7 +328,11 @@ public class EnemyAIController : MonoBehaviour
         if (direction != Vector3.zero)
         {
             Quaternion targetRotation = Quaternion.LookRotation(direction);
-            float currentTurnSpeed = cliffDanger ? turnSpeed * 3.0f : turnSpeed;
+            float currentSpeed = rb.velocity.magnitude;
+            float speedFactor = Mathf.Clamp01(currentSpeed / speedForMaxTurn);
+            float turnMultiplier = Mathf.Max(speedFactor, 0.2f);
+
+            float currentTurnSpeed = cliffDanger ? turnSpeed * 3.0f : turnSpeed * turnMultiplier;
             Quaternion newRotation = Quaternion.RotateTowards(rb.rotation, targetRotation, currentTurnSpeed * Time.fixedDeltaTime);
             rb.MoveRotation(newRotation);
         }
@@ -223,34 +340,18 @@ public class EnemyAIController : MonoBehaviour
         float currentForwardSpeed = Vector3.Dot(rb.velocity, transform.forward);
         float absSpeed = Mathf.Abs(currentForwardSpeed);
 
-        // --- 核心修复：面临悬崖时的紧急制动 ---
         if (cliffDanger)
         {
-            // 发现悬崖时，切断油门。如果此时车还在往前冲，立刻猛踩刹车
+            // 悬崖边缘紧急刹车
             if (currentForwardSpeed > 2f)
-            {
                 rb.AddForce(-transform.forward * fastAcceleration * rb.mass, ForceMode.Force);
-            }
-            return; // 直接 return，不执行下方的加速代码
+            return;
         }
 
-        // --- 正常赛车双段油门逻辑 ---
         if (absSpeed < maxSpeed)
         {
-            float currentAccel = 0f;
-
-            if (absSpeed < fastAccelThreshold)
-            {
-                currentAccel = fastAcceleration;
-            }
-            else
-            {
-                float speedPastThreshold = absSpeed - fastAccelThreshold;
-                float highSpeedRange = maxSpeed - fastAccelThreshold;
-                float decayFactor = 1f - (speedPastThreshold / highSpeedRange);
-
-                currentAccel = topEndAcceleration * decayFactor;
-            }
+            float currentAccel = absSpeed < fastAccelThreshold ? fastAcceleration :
+                topEndAcceleration * (1f - ((absSpeed - fastAccelThreshold) / (maxSpeed - fastAccelThreshold)));
 
             rb.AddForce(transform.forward * currentAccel * rb.mass, ForceMode.Force);
         }
