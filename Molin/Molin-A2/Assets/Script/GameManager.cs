@@ -21,34 +21,33 @@ public class GameManager : MonoBehaviour
     [Header("当前状态")]
     public GameState currentState = GameState.StartMenu;
 
-    [Header("🎬 3A级展厅运镜 (AAA Showroom Camera)")]
+    [Header("🎬 狂野飙车级闪切运镜 (Flash-Cut Camera)")]
     public GameObject playCamera;
     public GameObject menuCamera;
 
-    [Tooltip("基础环绕速度 (建议调慢，越慢越有质感)")]
-    public float baseOrbitSpeed = 4f;
-    [Tooltip("基础相机距离")]
-    public float baseOrbitDistance = 5.5f;
-    [Tooltip("基础相机高度")]
-    public float baseOrbitHeight = 1.2f;
-    [Tooltip("正数会让战车偏向屏幕右侧，给左侧UI留出空间")]
+    public float timePerShot = 2.8f;
+    public float driftSpeed = 0.4f;
     public float carScreenOffsetRight = 1.5f;
+    public float minCameraHeight = 0.5f;
 
-    [Space(10)]
-    [Header("运镜高级质感 (Juice)")]
-    [Tooltip("推拉镜头：距离的呼吸浮动幅度")]
-    public float distanceDriftAmplitude = 0.8f;
-    [Tooltip("推拉镜头：距离浮动的速度")]
-    public float distanceDriftSpeed = 0.5f;
-    [Tooltip("升降镜头：高度的呼吸浮动幅度")]
-    public float heightDriftAmplitude = 0.4f;
-    [Tooltip("升降镜头：高度浮动的速度")]
-    public float heightDriftSpeed = 0.7f;
-    [Tooltip("镜头重量感：数值越小，镜头移动和转动越有惯性和迟滞感")]
-    public float cameraDamping = 3f;
+    [Header("📷 镜头防穿模设置 (Layer识别)")]
+    [Tooltip("会阻挡摄像机视线的 Layer。必须勾选 Default 层，以及你的赛车所在的层。")]
+    public LayerMask cameraCollisionLayers;
+    [Tooltip("摄像机的物理碰撞体积大小，防止紧贴表面导致看穿模型")]
+    public float cameraCollisionRadius = 0.3f;
 
-    private float currentOrbitAngle = 45f;
-    private Vector3 smoothedLookTarget = Vector3.zero; // 用于阻尼平滑看向
+    private float shotTimer = 0f;
+    private int currentShotIndex = -1;
+    private Vector3 currentDriftDirection;
+    private Vector3 currentDriftOffset;
+
+    private readonly Vector3[] shotOffsets = new Vector3[]
+    {
+        new Vector3(3.0f, 0.8f, 4.0f),
+        new Vector3(-2.5f, 1.8f, -4.5f),
+        new Vector3(4.0f, 1.0f, 0.0f),
+        new Vector3(-2.0f, 0.6f, 3.5f)
+    };
 
     [Header("🎦 电影级 UI 动画与遮幅")]
     public GameObject startMenuPanel;
@@ -108,7 +107,8 @@ public class GameManager : MonoBehaviour
         switch (currentState)
         {
             case GameState.StartMenu:
-                UpdateShowroomCamera();
+                UpdateFlashCutCamera();
+
                 if (Input.GetKeyDown(KeyCode.Space))
                 {
                     currentState = GameState.MenuTransition;
@@ -117,7 +117,7 @@ public class GameManager : MonoBehaviour
                 break;
 
             case GameState.MenuTransition:
-                UpdateShowroomCamera();
+                UpdateFlashCutCamera();
                 break;
 
             case GameState.Playing:
@@ -127,49 +127,66 @@ public class GameManager : MonoBehaviour
     }
 
     // ==========================================
-    // 🎬 核心重写：3A 级相机控制算法
+    // 🎬 核心更新：基于 Layer 的球形射线防穿模
     // ==========================================
-    private void UpdateShowroomCamera()
+    private void UpdateFlashCutCamera()
     {
         if (menuCamera == null || player == null) return;
 
-        float time = Time.time;
-        currentOrbitAngle += baseOrbitSpeed * Time.deltaTime;
+        shotTimer -= Time.deltaTime;
+        if (shotTimer <= 0f) CutToNextShot();
 
-        // 1. 生成带有“呼吸感”的动态推拉与升降 (利用正弦波和余弦波)
-        // 这样镜头就不会死板地画圆，而是像椭圆一样有节奏地靠近、远离、升高、降低
-        float dynamicDistance = baseOrbitDistance + Mathf.Cos(time * distanceDriftSpeed) * distanceDriftAmplitude;
-        float dynamicHeight = baseOrbitHeight + Mathf.Sin(time * heightDriftSpeed) * heightDriftAmplitude;
+        // 1. 动态计算基础机位（跟随车体可能存在的微小晃动）
+        Vector3 localOffset = shotOffsets[currentShotIndex];
+        Vector3 basePos = player.transform.position
+                         + player.transform.right * localOffset.x
+                         + player.transform.up * localOffset.y
+                         + player.transform.forward * localOffset.z;
 
-        // 2. 计算相机的“绝对理想位置”
-        Quaternion rotation = Quaternion.Euler(0, currentOrbitAngle, 0);
-        Vector3 targetCamPos = player.transform.position + rotation * new Vector3(0, dynamicHeight, -dynamicDistance);
+        // 2. 累加缓慢漂移
+        currentDriftOffset += currentDriftDirection * driftSpeed * Time.deltaTime;
+        Vector3 idealPos = basePos + currentDriftOffset;
 
-        // 如果是第一帧，强制对齐防止镜头瞬间瞬移
-        if (smoothedLookTarget == Vector3.zero)
+        // 3. 海拔底线锁
+        if (idealPos.y < minCameraHeight) idealPos.y = minCameraHeight;
+
+        // 4. 计算视线基准点（看向车体中心偏上）
+        Vector3 baseLookTarget = player.transform.position + Vector3.up * 0.6f;
+        Vector3 dirToCam = idealPos - baseLookTarget;
+        float distToCam = dirToCam.magnitude;
+
+        Vector3 finalCamPos = idealPos;
+
+        // 5. 【防穿模核心】从车体中心向理想相机位置发射一个带有宽度的“球形射线”
+        // 如果这根射线撞到了 cameraCollisionLayers 中指定的 Layer...
+        if (Physics.SphereCast(baseLookTarget, cameraCollisionRadius, dirToCam.normalized, out RaycastHit hit, distToCam, cameraCollisionLayers))
         {
-            menuCamera.transform.position = targetCamPos;
-            smoothedLookTarget = player.transform.position;
+            // 强行把摄像机拉到障碍物的前方，防止进入模型内部！
+            finalCamPos = hit.point + hit.normal * 0.1f;
         }
 
-        // 3. 赋予“镜头物理重量感” (Smooth Lerp 位置)
-        // 镜头不会立刻到达目标点，而是被拖拽着过去，产生极佳的高级感
-        menuCamera.transform.position = Vector3.Lerp(menuCamera.transform.position, targetCamPos, Time.deltaTime * cameraDamping);
+        menuCamera.transform.position = finalCamPos;
 
-        // 4. 计算黄金分割偏置看向点
-        // 利用相机的右方向向量，把视觉中心往车身左侧推，从而让车在屏幕上偏右
-        Vector3 idealLookTarget = player.transform.position - menuCamera.transform.right * carScreenOffsetRight;
-        // 微调看向点的高度，让它跟随动态高度变化，防止盯住轮胎死看
-        idealLookTarget.y += dynamicHeight * 0.4f;
+        // 6. 保持黄金比例构图
+        Vector3 finalLookTarget = player.transform.position - menuCamera.transform.right * carScreenOffsetRight + Vector3.up * 0.6f;
+        menuCamera.transform.LookAt(finalLookTarget);
+    }
 
-        // 5. 赋予“云台阻尼感” (Smooth Lerp 看向点)
-        smoothedLookTarget = Vector3.Lerp(smoothedLookTarget, idealLookTarget, Time.deltaTime * (cameraDamping * 1.5f));
+    private void CutToNextShot()
+    {
+        shotTimer = timePerShot;
+        currentShotIndex = (currentShotIndex + 1) % shotOffsets.Length;
+        currentDriftOffset = Vector3.zero; // 每次切镜清空漂移累加器
 
-        menuCamera.transform.LookAt(smoothedLookTarget);
+        currentDriftDirection = new Vector3(
+            Random.Range(-1f, 1f),
+            Random.Range(0f, 0.2f),
+            Random.Range(-1f, 1f)
+        ).normalized;
     }
 
     // ==========================================
-    // 电影黑边与动画生成 (保留你优化的版本)
+    // UI 生成与大逃杀逻辑 (保持不变)
     // ==========================================
     private void GenerateCinematicGradients()
     {
@@ -185,10 +202,8 @@ public class GameManager : MonoBehaviour
             float t = y / (float)(resolution - 1);
             float alpha = Mathf.InverseLerp(0f, 1f - solidBlackRatio, t);
             alpha = Mathf.SmoothStep(0f, 1f, alpha);
-
             float noise = UnityEngine.Random.Range(-0.015f, 0.015f);
             alpha = Mathf.Clamp01(alpha + noise);
-
             gradientTex.SetPixel(0, y, new Color(0, 0, 0, alpha));
         }
         gradientTex.Apply();
@@ -198,6 +213,7 @@ public class GameManager : MonoBehaviour
             topCinematicBar.texture = gradientTex;
             topCinematicBar.uvRect = new Rect(0, 0, 1, 1);
         }
+
         if (bottomCinematicBar != null)
         {
             bottomCinematicBar.texture = gradientTex;
@@ -217,6 +233,8 @@ public class GameManager : MonoBehaviour
         if (hudPanel != null) hudPanel.SetActive(false);
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
         if (centerMessageText != null) centerMessageText.gameObject.SetActive(false);
+
+        shotTimer = 0f;
 
         StartCoroutine(PlayMenuEnterAnimation());
     }
@@ -261,6 +279,7 @@ public class GameManager : MonoBehaviour
 
             yield return null;
         }
+
         StartGame();
     }
 
@@ -278,9 +297,6 @@ public class GameManager : MonoBehaviour
         UpdateUI(true);
     }
 
-    // ==========================================
-    // 底层控制与大逃杀逻辑 (保持不变)
-    // ==========================================
     private void SetAllVehiclesActive(bool isActive)
     {
         if (player != null)
