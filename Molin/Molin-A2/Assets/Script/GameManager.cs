@@ -17,20 +17,33 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    public enum GameState { StartMenu, MenuTransition, Playing, GameOver }
+    // 【新增】：Spawning 状态，用于管理生成期间的过渡
+    public enum GameState { StartMenu, MenuTransition, Spawning, Playing, GameOver }
     [Header("当前状态")]
     public GameState currentState = GameState.StartMenu;
 
     [Header("⚙️ 全局设置与弹窗")]
-    [Tooltip("全局设置面板 (Settings Panel)")]
     public GameObject settingsPanel;
-    [Tooltip("帮助弹窗面板 (Help Panel)")]
     public GameObject helpPanel;
+    public bool IsAnyPopupOpen => (settingsPanel != null && settingsPanel.activeSelf) || (helpPanel != null && helpPanel.activeSelf);
 
-    // 动态判断当前是否有任何弹窗遮挡
-    public bool IsAnyPopupOpen =>
-        (settingsPanel != null && settingsPanel.activeSelf) ||
-        (helpPanel != null && helpPanel.activeSelf);
+    [Header("✨ 动态生成 (传送登场) 系统")]
+    [Tooltip("敌人的传送特效")]
+    public GameObject spawnVFX;
+    [Tooltip("敌人传送时的音效")]
+    public AudioClip spawnSFX;
+    [Tooltip("每个敌人生成的间隔时间 (秒)")]
+    public float spawnInterval = 0.4f;
+    [Tooltip("生成区域的中心点 (不填则默认为世界原点 0,0,0)")]
+    public Transform spawnAreaCenter;
+    [Tooltip("生成区域的长宽范围")]
+    public Vector2 spawnAreaSize = new Vector2(60f, 60f);
+    [Tooltip("距离玩家多近以内绝对不生成敌人")]
+    public float minDistanceFromPlayer = 15f;
+    [Tooltip("会被视为障碍物、不能生成在里面的 Layer")]
+    public LayerMask obstacleLayer;
+    [Tooltip("车辆占据的碰撞半径，越大越不容易卡墙")]
+    public float obstacleCheckRadius = 3f;
 
     [Header("🎬 狂野飙车级闪切运镜")]
     public GameObject playCamera;
@@ -97,7 +110,6 @@ public class GameManager : MonoBehaviour
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
 
-        // 确保游戏开始时时间是流动的
         Time.timeScale = 1f;
     }
 
@@ -109,7 +121,6 @@ public class GameManager : MonoBehaviour
         if (killFeedText != null) killFeedText.text = "";
         if (aliveCountText != null) originalAliveTextScale = aliveCountText.transform.localScale;
 
-        // 确保一开始弹窗是关闭的
         if (settingsPanel != null) settingsPanel.SetActive(false);
         if (helpPanel != null) helpPanel.SetActive(false);
 
@@ -119,35 +130,17 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // ==========================================
-        // 🖱️ 全局 ESC 键监听 (类似浏览器的后退逻辑)
-        // ==========================================
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if (helpPanel != null && helpPanel.activeSelf)
-            {
-                CloseHelp(); // 如果开着 Help，按 ESC 先关 Help，退回 Settings
-            }
-            else if (settingsPanel != null && settingsPanel.activeSelf)
-            {
-                CloseSettings(); // 如果开着 Settings，关掉它并恢复游戏
-            }
-            else if (currentState == GameState.Playing || currentState == GameState.StartMenu)
-            {
-                OpenSettings(); // 如果什么都没开，按 ESC 打开设置面板
-            }
+            if (helpPanel != null && helpPanel.activeSelf) CloseHelp();
+            else if (settingsPanel != null && settingsPanel.activeSelf) CloseSettings();
+            else if (currentState == GameState.Playing || currentState == GameState.StartMenu) OpenSettings();
         }
 
-        // ==========================================
-        // 状态机核心更新
-        // ==========================================
         switch (currentState)
         {
             case GameState.StartMenu:
-                // 使用 unscaledDeltaTime 确保即使菜单暂停了时间，镜头也能继续运镜展示
                 UpdateFlashCutCamera(Time.unscaledDeltaTime);
-
-                // 只有当没有任何弹窗开启时，按空格才能开始游戏！
                 if (Input.GetKeyDown(KeyCode.Space) && !IsAnyPopupOpen)
                 {
                     currentState = GameState.MenuTransition;
@@ -156,6 +149,7 @@ public class GameManager : MonoBehaviour
                 break;
 
             case GameState.MenuTransition:
+            case GameState.Spawning: // 【新增】：在生成敌人期间，依然保持闪切运镜！
                 UpdateFlashCutCamera(Time.unscaledDeltaTime);
                 break;
 
@@ -166,28 +160,94 @@ public class GameManager : MonoBehaviour
     }
 
     // ==========================================
-    // ⚙️ 弹窗与时间控制系统
+    // ✨ 核心新增：传送生成系统
+    // ==========================================
+    private IEnumerator SpawnEnemiesSequence()
+    {
+        currentState = GameState.Spawning;
+
+        // 打乱敌人列表，让每次生成的顺序都不一样
+        ShuffleList(enemies);
+
+        foreach (var enemy in enemies)
+        {
+            if (enemy == null) continue;
+
+            // 寻找合法生成点
+            Vector3 spawnPos = GetValidSpawnPosition();
+
+            // 传送敌人
+            enemy.transform.position = spawnPos;
+
+            // 播放特效和音效
+            if (spawnVFX != null) Instantiate(spawnVFX, spawnPos, Quaternion.identity);
+            if (spawnSFX != null && uiAudioSource != null) uiAudioSource.PlayOneShot(spawnSFX);
+
+            // 等待下一个
+            yield return new WaitForSeconds(spawnInterval);
+        }
+
+        // 所有敌人集结完毕，正式开战！
+        StartGame();
+    }
+
+    private Vector3 GetValidSpawnPosition()
+    {
+        Vector3 center = spawnAreaCenter != null ? spawnAreaCenter.position : Vector3.zero;
+
+        // 尝试寻找合法点，最多尝试 30 次防止死循环
+        for (int i = 0; i < 30; i++)
+        {
+            float randomX = Random.Range(-spawnAreaSize.x / 2f, spawnAreaSize.x / 2f);
+            float randomZ = Random.Range(-spawnAreaSize.y / 2f, spawnAreaSize.y / 2f);
+            Vector3 testPos = center + new Vector3(randomX, 50f, randomZ); // 从天空往下打射线
+
+            // 射线找地面
+            if (Physics.Raycast(testPos, Vector3.down, out RaycastHit hit, 100f))
+            {
+                Vector3 potentialPos = hit.point + Vector3.up * 1f; // 抬高一点防卡地
+
+                // 规则 1：避开玩家
+                if (player != null && Vector3.Distance(potentialPos, player.transform.position) < minDistanceFromPlayer)
+                    continue;
+
+                // 规则 2：避开指定障碍物
+                if (Physics.CheckSphere(potentialPos, obstacleCheckRadius, obstacleLayer))
+                    continue;
+
+                return potentialPos;
+            }
+        }
+
+        // 如果 30 次都没找到（地图太小或障碍太多），直接保底生成在中心点天上
+        return center + Vector3.up * 5f;
+    }
+
+    private void ShuffleList<T>(List<T> list)
+    {
+        for (int i = 0; i < list.Count; i++)
+        {
+            T temp = list[i];
+            int randomIndex = Random.Range(i, list.Count);
+            list[i] = list[randomIndex];
+            list[randomIndex] = temp;
+        }
+    }
+
+    // ==========================================
+    // ⚙️ 弹窗系统
     // ==========================================
     public void OpenSettings()
     {
         if (settingsPanel != null) settingsPanel.SetActive(true);
-
-        // 无论什么时候打开设置，都需要放出鼠标
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
-
-        // 如果在游玩中，暂停时间 (物理效果、AI、车子都会被冻结)
-        if (currentState == GameState.Playing)
-        {
-            Time.timeScale = 0f;
-        }
+        if (currentState == GameState.Playing) Time.timeScale = 0f;
     }
 
     public void CloseSettings()
     {
         if (settingsPanel != null) settingsPanel.SetActive(false);
-
-        // 如果是在游玩中关掉设置，恢复时间和隐藏鼠标
         if (currentState == GameState.Playing)
         {
             Time.timeScale = 1f;
@@ -196,24 +256,16 @@ public class GameManager : MonoBehaviour
         }
         else if (currentState == GameState.StartMenu)
         {
-            // 准备界面本来就有鼠标，所以只需保证它是显示的
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
         }
     }
 
-    public void OpenHelp()
-    {
-        if (helpPanel != null) helpPanel.SetActive(true);
-    }
-
-    public void CloseHelp()
-    {
-        if (helpPanel != null) helpPanel.SetActive(false);
-    }
+    public void OpenHelp() { if (helpPanel != null) helpPanel.SetActive(true); }
+    public void CloseHelp() { if (helpPanel != null) helpPanel.SetActive(false); }
 
     // ==========================================
-    // 🎬 运镜逻辑 (修改为支持 Unscaled Time)
+    // 🎬 运镜逻辑
     // ==========================================
     private void UpdateFlashCutCamera(float deltaTime)
     {
@@ -223,10 +275,7 @@ public class GameManager : MonoBehaviour
         if (shotTimer <= 0f) CutToNextShot();
 
         Vector3 localOffset = shotOffsets[currentShotIndex];
-        Vector3 basePos = player.transform.position
-                         + player.transform.right * localOffset.x
-                         + player.transform.up * localOffset.y
-                         + player.transform.forward * localOffset.z;
+        Vector3 basePos = player.transform.position + player.transform.right * localOffset.x + player.transform.up * localOffset.y + player.transform.forward * localOffset.z;
 
         currentDriftOffset += currentDriftDirection * driftSpeed * deltaTime;
         Vector3 idealPos = basePos + currentDriftOffset;
@@ -238,7 +287,6 @@ public class GameManager : MonoBehaviour
         float distToCam = dirToCam.magnitude;
 
         Vector3 finalCamPos = idealPos;
-
         if (Physics.SphereCast(baseLookTarget, cameraCollisionRadius, dirToCam.normalized, out RaycastHit hit, distToCam, cameraCollisionLayers))
         {
             finalCamPos = hit.point + hit.normal * 0.1f;
@@ -254,37 +302,24 @@ public class GameManager : MonoBehaviour
         shotTimer = timePerShot;
         currentShotIndex = (currentShotIndex + 1) % shotOffsets.Length;
         currentDriftOffset = Vector3.zero;
-
-        currentDriftDirection = new Vector3(
-            Random.Range(-1f, 1f),
-            Random.Range(0f, 0.2f),
-            Random.Range(-1f, 1f)
-        ).normalized;
+        currentDriftDirection = new Vector3(Random.Range(-1f, 1f), Random.Range(0f, 0.2f), Random.Range(-1f, 1f)).normalized;
     }
 
     // ==========================================
-    // 底层 UI 与流程逻辑 (完全保留)
+    // 底层 UI 与控制逻辑
     // ==========================================
     private void GenerateCinematicGradients()
     {
-        int resolution = 256;
-        float solidBlackRatio = 0.35f;
-
+        int resolution = 256; float solidBlackRatio = 0.35f;
         Texture2D gradientTex = new Texture2D(1, resolution, TextureFormat.ARGB32, false);
-        gradientTex.wrapMode = TextureWrapMode.Clamp;
-        gradientTex.filterMode = FilterMode.Bilinear;
-
+        gradientTex.wrapMode = TextureWrapMode.Clamp; gradientTex.filterMode = FilterMode.Bilinear;
         for (int y = 0; y < resolution; y++)
         {
             float t = y / (float)(resolution - 1);
-            float alpha = Mathf.InverseLerp(0f, 1f - solidBlackRatio, t);
-            alpha = Mathf.SmoothStep(0f, 1f, alpha);
-            float noise = UnityEngine.Random.Range(-0.015f, 0.015f);
-            alpha = Mathf.Clamp01(alpha + noise);
-            gradientTex.SetPixel(0, y, new Color(0, 0, 0, alpha));
+            float alpha = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, 1f - solidBlackRatio, t));
+            gradientTex.SetPixel(0, y, new Color(0, 0, 0, Mathf.Clamp01(alpha + UnityEngine.Random.Range(-0.015f, 0.015f))));
         }
         gradientTex.Apply();
-
         if (topCinematicBar != null) { topCinematicBar.texture = gradientTex; topCinematicBar.uvRect = new Rect(0, 0, 1, 1); }
         if (bottomCinematicBar != null) { bottomCinematicBar.texture = gradientTex; bottomCinematicBar.uvRect = new Rect(0, 1, 1, -1); }
     }
@@ -292,19 +327,18 @@ public class GameManager : MonoBehaviour
     private void InitializeStartMenu()
     {
         currentState = GameState.StartMenu;
-        SetAllVehiclesActive(false);
+
+        // 【核心修改】：不仅关闭控制，直接把物理引擎冻住，防止地图外的车掉下虚空
+        SetAllVehiclesActive(false, true);
 
         if (playCamera != null) playCamera.SetActive(false);
         if (menuCamera != null) menuCamera.SetActive(true);
-
         if (startMenuPanel != null) startMenuPanel.SetActive(true);
         if (hudPanel != null) hudPanel.SetActive(false);
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
         if (centerMessageText != null) centerMessageText.gameObject.SetActive(false);
 
-        Cursor.visible = true;
-        Cursor.lockState = CursorLockMode.None;
-
+        Cursor.visible = true; Cursor.lockState = CursorLockMode.None;
         shotTimer = 0f;
         StartCoroutine(PlayMenuEnterAnimation());
     }
@@ -312,69 +346,63 @@ public class GameManager : MonoBehaviour
     private IEnumerator PlayMenuEnterAnimation()
     {
         float elapsed = 0f;
-        Vector2 topStart = new Vector2(0, 300f);
-        Vector2 botStart = new Vector2(0, -300f);
-        Vector2 contentStart = new Vector2(-1200f, 0f);
-
+        Vector2 topStart = new Vector2(0, 300f); Vector2 botStart = new Vector2(0, -300f); Vector2 contentStart = new Vector2(-1200f, 0f);
         while (elapsed < animationDuration)
         {
-            elapsed += Time.unscaledDeltaTime; // 即使暂停也能播放动画
+            elapsed += Time.unscaledDeltaTime;
             float t = Mathf.SmoothStep(0, 1, elapsed / animationDuration);
-
             if (topCinematicBar != null) topCinematicBar.rectTransform.anchoredPosition = Vector2.Lerp(topStart, Vector2.zero, t);
             if (bottomCinematicBar != null) bottomCinematicBar.rectTransform.anchoredPosition = Vector2.Lerp(botStart, Vector2.zero, t);
             if (startMenuContent != null) startMenuContent.anchoredPosition = Vector2.Lerp(contentStart, Vector2.zero, t);
-
             yield return null;
         }
     }
 
     private IEnumerator PlayMenuExitAnimation()
     {
-        if (uiAudioSource != null) uiAudioSource.Play();
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
-
+        Cursor.visible = false; Cursor.lockState = CursorLockMode.Locked;
         float elapsed = 0f;
-        Vector2 topEnd = new Vector2(0, 300f);
-        Vector2 botEnd = new Vector2(0, -300f);
-        Vector2 contentEnd = new Vector2(-1200f, 0f);
-
+        Vector2 topEnd = new Vector2(0, 300f); Vector2 botEnd = new Vector2(0, -300f); Vector2 contentEnd = new Vector2(-1200f, 0f);
         while (elapsed < animationDuration)
         {
             elapsed += Time.unscaledDeltaTime;
             float t = Mathf.SmoothStep(0, 1, elapsed / animationDuration);
-
             if (topCinematicBar != null) topCinematicBar.rectTransform.anchoredPosition = Vector2.Lerp(Vector2.zero, topEnd, t);
             if (bottomCinematicBar != null) bottomCinematicBar.rectTransform.anchoredPosition = Vector2.Lerp(Vector2.zero, botEnd, t);
             if (startMenuContent != null) startMenuContent.anchoredPosition = Vector2.Lerp(Vector2.zero, contentEnd, t);
-
             yield return null;
         }
 
-        StartGame();
+        // 【核心流转】：UI 退场后，不立刻开始，而是进入传送生成序列
+        StartCoroutine(SpawnEnemiesSequence());
     }
 
     private void StartGame()
     {
         currentState = GameState.Playing;
-        SetAllVehiclesActive(true);
+
+        // 【核心修改】：比赛开始，解冻所有物理引擎并赋予控制权
+        SetAllVehiclesActive(true, false);
 
         if (menuCamera != null) menuCamera.SetActive(false);
         if (playCamera != null) playCamera.SetActive(true);
-
         if (startMenuPanel != null) startMenuPanel.SetActive(false);
         if (hudPanel != null) hudPanel.SetActive(true);
 
         UpdateUI(true);
     }
 
-    private void SetAllVehiclesActive(bool isActive)
+    // 【核心修改】：加入了 isKinematic 的控制
+    private void SetAllVehiclesActive(bool isActive, bool freezePhysics)
     {
         if (player != null)
         {
             PlayerController pc = player.GetComponent<PlayerController>();
             if (pc != null) pc.enabled = isActive;
+
+            // 玩家最好不要完全冻住位置，但如果不动也可以开启
+            Rigidbody rb = player.GetComponent<Rigidbody>();
+            if (rb != null) rb.isKinematic = freezePhysics;
         }
         foreach (var enemy in enemies)
         {
@@ -382,6 +410,9 @@ public class GameManager : MonoBehaviour
             {
                 EnemyAIController ai = enemy.GetComponent<EnemyAIController>();
                 if (ai != null) ai.enabled = isActive;
+
+                Rigidbody rb = enemy.GetComponent<Rigidbody>();
+                if (rb != null) rb.isKinematic = freezePhysics;
             }
         }
     }
@@ -390,17 +421,14 @@ public class GameManager : MonoBehaviour
     {
         if (player != null && player.transform.position.y < deathYThreshold)
         {
-            EliminateCar(player, "Player");
-            TriggerGameOver(false);
+            EliminateCar(player, "Player"); TriggerGameOver(false);
         }
         for (int i = enemies.Count - 1; i >= 0; i--)
         {
             GameObject enemy = enemies[i];
             if (enemy != null && enemy.transform.position.y < deathYThreshold)
             {
-                EliminateCar(enemy, enemy.name);
-                enemies.RemoveAt(i);
-                UpdateUI(false);
+                EliminateCar(enemy, enemy.name); enemies.RemoveAt(i); UpdateUI(false);
                 if (enemies.Count == 0 && player != null) TriggerGameOver(true);
             }
         }
@@ -409,27 +437,16 @@ public class GameManager : MonoBehaviour
     private void EliminateCar(GameObject car, string carName)
     {
         if (eliminationVFX != null) Instantiate(eliminationVFX, car.transform.position + Vector3.up * 2f, Quaternion.identity);
-        ShowKillFeed($"{carName} fell out");
-        Destroy(car);
+        ShowKillFeed($"{carName} fell out"); Destroy(car);
     }
 
-    private void ShowKillFeed(string message)
-    {
-        if (killFeedText == null) return;
-        StartCoroutine(FeedRoutine(message));
-    }
+    private void ShowKillFeed(string message) { if (killFeedText != null) StartCoroutine(FeedRoutine(message)); }
 
     private IEnumerator FeedRoutine(string message)
     {
-        activeFeeds.Add(message);
-        if (activeFeeds.Count > maxFeedLines) activeFeeds.RemoveAt(0);
-        UpdateFeedText();
+        activeFeeds.Add(message); if (activeFeeds.Count > maxFeedLines) activeFeeds.RemoveAt(0); UpdateFeedText();
         yield return new WaitForSeconds(feedStayTime);
-        if (activeFeeds.Contains(message))
-        {
-            activeFeeds.Remove(message);
-            UpdateFeedText();
-        }
+        if (activeFeeds.Contains(message)) { activeFeeds.Remove(message); UpdateFeedText(); }
     }
 
     private void UpdateFeedText() => killFeedText.text = string.Join("\n", activeFeeds);
@@ -463,8 +480,7 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator PulseTextRoutine()
     {
-        float elapsed = 0f;
-        Vector3 targetScale = originalAliveTextScale * pulseScaleMultiplier;
+        float elapsed = 0f; Vector3 targetScale = originalAliveTextScale * pulseScaleMultiplier;
         while (elapsed < pulseDuration)
         {
             elapsed += Time.unscaledDeltaTime;
@@ -480,10 +496,7 @@ public class GameManager : MonoBehaviour
         currentState = GameState.GameOver;
         if (hudPanel != null) hudPanel.SetActive(false);
         if (gameOverPanel != null) gameOverPanel.SetActive(true);
-
-        Cursor.visible = true;
-        Cursor.lockState = CursorLockMode.None;
-
+        Cursor.visible = true; Cursor.lockState = CursorLockMode.None;
         if (centerMessageText != null)
         {
             centerMessageText.gameObject.SetActive(true);
@@ -492,9 +505,20 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void RestartGame()
+    public void RestartGame() { Time.timeScale = 1f; SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex); }
+
+    // ==========================================
+    // 🎨 辅助可视化 (只在 Scene 窗口显示)
+    // ==========================================
+    private void OnDrawGizmosSelected()
     {
-        Time.timeScale = 1f; // 确保重启时时间恢复流动
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        Gizmos.color = new Color(0f, 1f, 0f, 0.3f);
+        Vector3 center = spawnAreaCenter != null ? spawnAreaCenter.position : Vector3.zero;
+
+        // 画出生成范围的盒子 (Y 轴高度供示意)
+        Gizmos.DrawCube(center + Vector3.up * 5f, new Vector3(spawnAreaSize.x, 10f, spawnAreaSize.y));
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireCube(center + Vector3.up * 5f, new Vector3(spawnAreaSize.x, 10f, spawnAreaSize.y));
     }
 }
