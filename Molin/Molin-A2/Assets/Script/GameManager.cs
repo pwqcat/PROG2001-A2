@@ -21,19 +21,27 @@ public class GameManager : MonoBehaviour
     [Header("当前状态")]
     public GameState currentState = GameState.StartMenu;
 
-    [Header("🎬 狂野飙车级闪切运镜 (Flash-Cut Camera)")]
+    [Header("⚙️ 全局设置与弹窗")]
+    [Tooltip("全局设置面板 (Settings Panel)")]
+    public GameObject settingsPanel;
+    [Tooltip("帮助弹窗面板 (Help Panel)")]
+    public GameObject helpPanel;
+
+    // 动态判断当前是否有任何弹窗遮挡
+    public bool IsAnyPopupOpen =>
+        (settingsPanel != null && settingsPanel.activeSelf) ||
+        (helpPanel != null && helpPanel.activeSelf);
+
+    [Header("🎬 狂野飙车级闪切运镜")]
     public GameObject playCamera;
     public GameObject menuCamera;
-
     public float timePerShot = 2.8f;
     public float driftSpeed = 0.4f;
     public float carScreenOffsetRight = 1.5f;
     public float minCameraHeight = 0.5f;
 
-    [Header("📷 镜头防穿模设置 (Layer识别)")]
-    [Tooltip("会阻挡摄像机视线的 Layer。必须勾选 Default 层，以及你的赛车所在的层。")]
+    [Header("📷 镜头防穿模设置")]
     public LayerMask cameraCollisionLayers;
-    [Tooltip("摄像机的物理碰撞体积大小，防止紧贴表面导致看穿模型")]
     public float cameraCollisionRadius = 0.3f;
 
     private float shotTimer = 0f;
@@ -88,6 +96,9 @@ public class GameManager : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+
+        // 确保游戏开始时时间是流动的
+        Time.timeScale = 1f;
     }
 
     void Start()
@@ -98,18 +109,46 @@ public class GameManager : MonoBehaviour
         if (killFeedText != null) killFeedText.text = "";
         if (aliveCountText != null) originalAliveTextScale = aliveCountText.transform.localScale;
 
+        // 确保一开始弹窗是关闭的
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (helpPanel != null) helpPanel.SetActive(false);
+
         GenerateCinematicGradients();
         InitializeStartMenu();
     }
 
     void Update()
     {
+        // ==========================================
+        // 🖱️ 全局 ESC 键监听 (类似浏览器的后退逻辑)
+        // ==========================================
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (helpPanel != null && helpPanel.activeSelf)
+            {
+                CloseHelp(); // 如果开着 Help，按 ESC 先关 Help，退回 Settings
+            }
+            else if (settingsPanel != null && settingsPanel.activeSelf)
+            {
+                CloseSettings(); // 如果开着 Settings，关掉它并恢复游戏
+            }
+            else if (currentState == GameState.Playing || currentState == GameState.StartMenu)
+            {
+                OpenSettings(); // 如果什么都没开，按 ESC 打开设置面板
+            }
+        }
+
+        // ==========================================
+        // 状态机核心更新
+        // ==========================================
         switch (currentState)
         {
             case GameState.StartMenu:
-                UpdateFlashCutCamera();
+                // 使用 unscaledDeltaTime 确保即使菜单暂停了时间，镜头也能继续运镜展示
+                UpdateFlashCutCamera(Time.unscaledDeltaTime);
 
-                if (Input.GetKeyDown(KeyCode.Space))
+                // 只有当没有任何弹窗开启时，按空格才能开始游戏！
+                if (Input.GetKeyDown(KeyCode.Space) && !IsAnyPopupOpen)
                 {
                     currentState = GameState.MenuTransition;
                     StartCoroutine(PlayMenuExitAnimation());
@@ -117,7 +156,7 @@ public class GameManager : MonoBehaviour
                 break;
 
             case GameState.MenuTransition:
-                UpdateFlashCutCamera();
+                UpdateFlashCutCamera(Time.unscaledDeltaTime);
                 break;
 
             case GameState.Playing:
@@ -127,47 +166,85 @@ public class GameManager : MonoBehaviour
     }
 
     // ==========================================
-    // 🎬 核心更新：基于 Layer 的球形射线防穿模
+    // ⚙️ 弹窗与时间控制系统
     // ==========================================
-    private void UpdateFlashCutCamera()
+    public void OpenSettings()
+    {
+        if (settingsPanel != null) settingsPanel.SetActive(true);
+
+        // 无论什么时候打开设置，都需要放出鼠标
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+
+        // 如果在游玩中，暂停时间 (物理效果、AI、车子都会被冻结)
+        if (currentState == GameState.Playing)
+        {
+            Time.timeScale = 0f;
+        }
+    }
+
+    public void CloseSettings()
+    {
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+
+        // 如果是在游玩中关掉设置，恢复时间和隐藏鼠标
+        if (currentState == GameState.Playing)
+        {
+            Time.timeScale = 1f;
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
+        }
+        else if (currentState == GameState.StartMenu)
+        {
+            // 准备界面本来就有鼠标，所以只需保证它是显示的
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+        }
+    }
+
+    public void OpenHelp()
+    {
+        if (helpPanel != null) helpPanel.SetActive(true);
+    }
+
+    public void CloseHelp()
+    {
+        if (helpPanel != null) helpPanel.SetActive(false);
+    }
+
+    // ==========================================
+    // 🎬 运镜逻辑 (修改为支持 Unscaled Time)
+    // ==========================================
+    private void UpdateFlashCutCamera(float deltaTime)
     {
         if (menuCamera == null || player == null) return;
 
-        shotTimer -= Time.deltaTime;
+        shotTimer -= deltaTime;
         if (shotTimer <= 0f) CutToNextShot();
 
-        // 1. 动态计算基础机位（跟随车体可能存在的微小晃动）
         Vector3 localOffset = shotOffsets[currentShotIndex];
         Vector3 basePos = player.transform.position
                          + player.transform.right * localOffset.x
                          + player.transform.up * localOffset.y
                          + player.transform.forward * localOffset.z;
 
-        // 2. 累加缓慢漂移
-        currentDriftOffset += currentDriftDirection * driftSpeed * Time.deltaTime;
+        currentDriftOffset += currentDriftDirection * driftSpeed * deltaTime;
         Vector3 idealPos = basePos + currentDriftOffset;
 
-        // 3. 海拔底线锁
         if (idealPos.y < minCameraHeight) idealPos.y = minCameraHeight;
 
-        // 4. 计算视线基准点（看向车体中心偏上）
         Vector3 baseLookTarget = player.transform.position + Vector3.up * 0.6f;
         Vector3 dirToCam = idealPos - baseLookTarget;
         float distToCam = dirToCam.magnitude;
 
         Vector3 finalCamPos = idealPos;
 
-        // 5. 【防穿模核心】从车体中心向理想相机位置发射一个带有宽度的“球形射线”
-        // 如果这根射线撞到了 cameraCollisionLayers 中指定的 Layer...
         if (Physics.SphereCast(baseLookTarget, cameraCollisionRadius, dirToCam.normalized, out RaycastHit hit, distToCam, cameraCollisionLayers))
         {
-            // 强行把摄像机拉到障碍物的前方，防止进入模型内部！
             finalCamPos = hit.point + hit.normal * 0.1f;
         }
 
         menuCamera.transform.position = finalCamPos;
-
-        // 6. 保持黄金比例构图
         Vector3 finalLookTarget = player.transform.position - menuCamera.transform.right * carScreenOffsetRight + Vector3.up * 0.6f;
         menuCamera.transform.LookAt(finalLookTarget);
     }
@@ -176,7 +253,7 @@ public class GameManager : MonoBehaviour
     {
         shotTimer = timePerShot;
         currentShotIndex = (currentShotIndex + 1) % shotOffsets.Length;
-        currentDriftOffset = Vector3.zero; // 每次切镜清空漂移累加器
+        currentDriftOffset = Vector3.zero;
 
         currentDriftDirection = new Vector3(
             Random.Range(-1f, 1f),
@@ -186,7 +263,7 @@ public class GameManager : MonoBehaviour
     }
 
     // ==========================================
-    // UI 生成与大逃杀逻辑 (保持不变)
+    // 底层 UI 与流程逻辑 (完全保留)
     // ==========================================
     private void GenerateCinematicGradients()
     {
@@ -208,17 +285,8 @@ public class GameManager : MonoBehaviour
         }
         gradientTex.Apply();
 
-        if (topCinematicBar != null)
-        {
-            topCinematicBar.texture = gradientTex;
-            topCinematicBar.uvRect = new Rect(0, 0, 1, 1);
-        }
-
-        if (bottomCinematicBar != null)
-        {
-            bottomCinematicBar.texture = gradientTex;
-            bottomCinematicBar.uvRect = new Rect(0, 1, 1, -1);
-        }
+        if (topCinematicBar != null) { topCinematicBar.texture = gradientTex; topCinematicBar.uvRect = new Rect(0, 0, 1, 1); }
+        if (bottomCinematicBar != null) { bottomCinematicBar.texture = gradientTex; bottomCinematicBar.uvRect = new Rect(0, 1, 1, -1); }
     }
 
     private void InitializeStartMenu()
@@ -234,8 +302,10 @@ public class GameManager : MonoBehaviour
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
         if (centerMessageText != null) centerMessageText.gameObject.SetActive(false);
 
-        shotTimer = 0f;
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
 
+        shotTimer = 0f;
         StartCoroutine(PlayMenuEnterAnimation());
     }
 
@@ -248,7 +318,7 @@ public class GameManager : MonoBehaviour
 
         while (elapsed < animationDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime; // 即使暂停也能播放动画
             float t = Mathf.SmoothStep(0, 1, elapsed / animationDuration);
 
             if (topCinematicBar != null) topCinematicBar.rectTransform.anchoredPosition = Vector2.Lerp(topStart, Vector2.zero, t);
@@ -262,6 +332,8 @@ public class GameManager : MonoBehaviour
     private IEnumerator PlayMenuExitAnimation()
     {
         if (uiAudioSource != null) uiAudioSource.Play();
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
 
         float elapsed = 0f;
         Vector2 topEnd = new Vector2(0, 300f);
@@ -270,7 +342,7 @@ public class GameManager : MonoBehaviour
 
         while (elapsed < animationDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             float t = Mathf.SmoothStep(0, 1, elapsed / animationDuration);
 
             if (topCinematicBar != null) topCinematicBar.rectTransform.anchoredPosition = Vector2.Lerp(Vector2.zero, topEnd, t);
@@ -395,7 +467,7 @@ public class GameManager : MonoBehaviour
         Vector3 targetScale = originalAliveTextScale * pulseScaleMultiplier;
         while (elapsed < pulseDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             float curve = Mathf.Sin((elapsed / pulseDuration) * Mathf.PI);
             aliveCountText.transform.localScale = Vector3.Lerp(originalAliveTextScale, targetScale, curve);
             yield return null;
@@ -408,6 +480,10 @@ public class GameManager : MonoBehaviour
         currentState = GameState.GameOver;
         if (hudPanel != null) hudPanel.SetActive(false);
         if (gameOverPanel != null) gameOverPanel.SetActive(true);
+
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+
         if (centerMessageText != null)
         {
             centerMessageText.gameObject.SetActive(true);
@@ -416,5 +492,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void RestartGame() => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    public void RestartGame()
+    {
+        Time.timeScale = 1f; // 确保重启时时间恢复流动
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
 }
