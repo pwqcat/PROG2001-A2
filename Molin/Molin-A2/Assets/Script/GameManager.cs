@@ -23,17 +23,34 @@ public class AliveMilestone
 }
 
 [System.Serializable]
+public class CountdownTextElement
+{
+    [Tooltip("文本内容 (支持 <sprite name=\"X\">)")]
+    public string text = "READY";
+    [Tooltip("字体颜色")]
+    public Color color = Color.white;
+    [Tooltip("相对中心的偏移位置 (X, Y)")]
+    public Vector2 anchoredPosition = Vector2.zero;
+}
+
+[System.Serializable]
 public class CountdownStep
 {
-    public string message = "READY";
+    [Header("文本组合")]
+    [Tooltip("该阶段同时弹出的所有文本（可无限添加）")]
+    public List<CountdownTextElement> textElements = new List<CountdownTextElement>();
+
+    [Header("样式与动画")]
     public TMP_FontAsset customFont;
     public TMP_SpriteAsset customSpriteAsset;
-    public AudioClip sfx;
-    [Range(0f, 1f)] public float sfxVolume = 1f;
-    public float sfxDelay = 0f;
     public float targetScale = 1.0f;
     public float popDuration = 0.25f;
     public float stayDuration = 0.6f;
+
+    [Header("音效")]
+    public AudioClip sfx;
+    [Range(0f, 1f)] public float sfxVolume = 1f;
+    public float sfxDelay = 0f;
 }
 
 [System.Serializable]
@@ -44,17 +61,12 @@ public class VfxControlSettings
     public float playbackSpeed = 1.0f;
 }
 
-// 【新增】：多层淘汰特效的独立配置类
 [System.Serializable]
 public class EliminationVFXConfig
 {
-    [Tooltip("特效预制体")]
     public GameObject vfxPrefab;
-    [Tooltip("特效位置偏移")]
     public Vector3 offset = new Vector3(0f, 2f, 0f);
-    [Tooltip("特效大小缩放")]
     public float scale = 1.0f;
-    [Tooltip("生命周期控制 (倒放/倍速)")]
     public VfxControlSettings controlSettings;
 }
 
@@ -116,8 +128,11 @@ public class GameManager : MonoBehaviour
     };
 
     [Header("🏁 赛前倒计时系统 (Countdown)")]
-    public TextMeshProUGUI countdownText;
+    [Tooltip("此 Text 将作为克隆模板，放在屏幕中心即可")]
+    public TextMeshProUGUI countdownTextTemplate;
     public List<CountdownStep> countdownSteps = new List<CountdownStep>();
+
+    private List<TextMeshProUGUI> countdownTextPool = new List<TextMeshProUGUI>();
 
     [Header("🎦 电影级 UI 动画与遮幅")]
     public GameObject startMenuPanel;
@@ -132,9 +147,6 @@ public class GameManager : MonoBehaviour
 
     [Header("大逃杀核心规则")]
     public float deathYThreshold = -5f;
-
-    // 【核心修改】：淘汰特效变成了一个列表，支持无限添加特效！
-    [Tooltip("你可以添加多个特效（比如火焰+烟雾+碎片），它们会同时在死亡位置播放")]
     public List<EliminationVFXConfig> eliminationVFXList = new List<EliminationVFXConfig>();
 
     [Header("HUD 数据与动态反馈 (Juice)")]
@@ -142,7 +154,10 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI killFeedText;
     public int maxFeedLines = 4;
     public float feedStayTime = 3.5f;
+
     public AudioSource uiAudioSource;
+    public AudioSource settingsUIAudioSource;
+
     public float pulseScaleMultiplier = 1.5f;
     public float pulseDuration = 0.3f;
     public List<AliveMilestone> milestones = new List<AliveMilestone>();
@@ -168,12 +183,11 @@ public class GameManager : MonoBehaviour
         else Destroy(gameObject);
 
         Time.timeScale = 1f;
-        AudioListener.pause = false; // 确保启动时音频未暂停
+        AudioListener.pause = false;
 
-        if (uiAudioSource != null)
+        if (settingsUIAudioSource != null)
         {
-            // 【核心安全锁】：确保 UI 音效免疫全局暂停，这样暂停菜单里的点击声依然有效！
-            uiAudioSource.ignoreListenerPause = true;
+            settingsUIAudioSource.ignoreListenerPause = true;
         }
 
         CinemachineCore.GetInputAxis = CustomCinemachineInput;
@@ -189,7 +203,8 @@ public class GameManager : MonoBehaviour
 
         if (settingsPanel != null) settingsPanel.SetActive(false);
         if (helpPanel != null) helpPanel.SetActive(false);
-        if (countdownText != null) countdownText.gameObject.SetActive(false);
+
+        if (countdownTextTemplate != null) countdownTextTemplate.gameObject.SetActive(false);
 
         GenerateCinematicGradients();
         InitializeStartMenu();
@@ -259,10 +274,11 @@ public class GameManager : MonoBehaviour
         if (currentState != GameState.StartMenu && currentState != GameState.GameOver)
         {
             Time.timeScale = 0f;
-            AudioListener.pause = true; // 【核心修改】：开启设置面板时，暂停所有游戏内音效
+            AudioListener.pause = true;
         }
 
-        ForceUIOnTop(settingsPanel);
+        // Settings 面板设置为 30000 层
+        ForceUIOnTop(settingsPanel, 30000);
         UpdateCursorState();
     }
 
@@ -270,15 +286,15 @@ public class GameManager : MonoBehaviour
     {
         if (settingsPanel != null) settingsPanel.SetActive(false);
         Time.timeScale = 1f;
-        AudioListener.pause = false; // 【核心修改】：关闭设置面板时，恢复音效播放
-
+        AudioListener.pause = false;
         UpdateCursorState();
     }
 
     public void OpenHelp()
     {
         if (helpPanel != null) helpPanel.SetActive(true);
-        ForceUIOnTop(helpPanel);
+        // Help 面板设置为 30001 层，以防它在 Settings 面板内部被打开时层级冲突
+        ForceUIOnTop(helpPanel, 30001);
         UpdateCursorState();
     }
 
@@ -288,19 +304,36 @@ public class GameManager : MonoBehaviour
         UpdateCursorState();
     }
 
-    private void ForceUIOnTop(GameObject panel)
+    // 【核心修复】：双管齐下的层级控制机制
+    private void ForceUIOnTop(GameObject panel, int popupSortingOrder)
     {
         if (panel == null) return;
-        Canvas parentCanvas = panel.GetComponentInParent<Canvas>();
-        if (parentCanvas != null)
+
+        // 1. 先把主画布提到 20000，确保包括倒计时在内的所有 UI 都能遮住 3D 粒子特效
+        Canvas rootCanvas = panel.transform.root.GetComponentInChildren<Canvas>();
+        if (rootCanvas != null)
         {
-            parentCanvas.overrideSorting = true;
-            parentCanvas.sortingOrder = 30000;
+            rootCanvas.overrideSorting = true;
+            rootCanvas.sortingOrder = 20000;
         }
+
+        // 2. 给当前弹窗单独挂一个子 Canvas，层级提到 30000+，直接凌驾于整个 UI 体系之上！
+        Canvas panelCanvas = panel.GetComponent<Canvas>();
+        if (panelCanvas == null)
+        {
+            panelCanvas = panel.AddComponent<Canvas>();
+            // 必须加 GraphicRaycaster，不然挂了 Canvas 后按钮会点不到
+            if (panel.GetComponent<GraphicRaycaster>() == null)
+            {
+                panel.AddComponent<GraphicRaycaster>();
+            }
+        }
+        panelCanvas.overrideSorting = true;
+        panelCanvas.sortingOrder = popupSortingOrder;
     }
 
     // ==========================================
-    // ✨ 核心逻辑：特效高级生命周期 (倒放/倍速)
+    // ✨ 特效生命周期接管
     // ==========================================
     private IEnumerator HandleVfxLifecycle(GameObject vfxInstance, VfxControlSettings settings)
     {
@@ -314,30 +347,21 @@ public class GameManager : MonoBehaviour
             main.simulationSpeed = settings.playbackSpeed;
         }
 
+        if (!settings.enableReverse) yield break;
+
         float halfRealTime = (settings.totalDuration / 2f) / settings.playbackSpeed;
+        yield return new WaitForSeconds(halfRealTime);
+        if (vfxInstance == null) yield break;
 
-        if (settings.enableReverse)
+        foreach (var ps in particles)
         {
-            yield return new WaitForSeconds(halfRealTime);
-
-            if (vfxInstance == null) yield break;
-
-            foreach (var ps in particles)
-            {
-                var main = ps.main;
-                main.simulationSpeed = -settings.playbackSpeed;
-            }
-
-            yield return new WaitForSeconds(halfRealTime);
-        }
-        else
-        {
-            yield return new WaitForSeconds(settings.totalDuration / settings.playbackSpeed);
+            var main = ps.main;
+            main.simulationSpeed = -settings.playbackSpeed;
         }
 
+        yield return new WaitForSeconds(halfRealTime);
         if (vfxInstance != null) Destroy(vfxInstance);
     }
-
 
     // ==========================================
     // ✨ 相机过渡与异步生成
@@ -399,27 +423,46 @@ public class GameManager : MonoBehaviour
     }
 
     // ==========================================
-    // 🏁 倒计时弹字系统
+    // 🏁 倒计时弹字系统 (多元素对象池版)
     // ==========================================
+    private TextMeshProUGUI GetCountdownTextFromPool(int index)
+    {
+        if (index >= countdownTextPool.Count)
+        {
+            GameObject newTextObj = Instantiate(countdownTextTemplate.gameObject, countdownTextTemplate.transform.parent);
+            TextMeshProUGUI newText = newTextObj.GetComponent<TextMeshProUGUI>();
+            countdownTextPool.Add(newText);
+        }
+        return countdownTextPool[index];
+    }
+
     private IEnumerator CountdownSequence()
     {
         currentState = GameState.Countdown;
         UpdateCursorState();
 
-        if (countdownText != null)
-        {
-            countdownText.gameObject.SetActive(true);
-            countdownText.text = "";
-        }
-
         foreach (var step in countdownSteps)
         {
-            if (countdownText != null)
+            List<TextMeshProUGUI> currentStepActiveTexts = new List<TextMeshProUGUI>();
+
+            if (countdownTextTemplate != null)
             {
-                countdownText.text = step.message;
-                if (step.customFont != null) countdownText.font = step.customFont;
-                if (step.customSpriteAsset != null) countdownText.spriteAsset = step.customSpriteAsset;
-                countdownText.transform.localScale = Vector3.zero;
+                for (int i = 0; i < step.textElements.Count; i++)
+                {
+                    var elementConfig = step.textElements[i];
+                    TextMeshProUGUI txt = GetCountdownTextFromPool(i);
+
+                    txt.gameObject.SetActive(true);
+                    txt.text = elementConfig.text;
+                    txt.color = elementConfig.color;
+                    txt.rectTransform.anchoredPosition = elementConfig.anchoredPosition;
+
+                    if (step.customFont != null) txt.font = step.customFont;
+                    if (step.customSpriteAsset != null) txt.spriteAsset = step.customSpriteAsset;
+
+                    txt.transform.localScale = Vector3.zero;
+                    currentStepActiveTexts.Add(txt);
+                }
             }
 
             if (step.sfx != null && uiAudioSource != null)
@@ -435,21 +478,28 @@ public class GameManager : MonoBehaviour
                 float t = Mathf.Clamp01(animTimer / step.popDuration);
                 float popCurve = 1f - Mathf.Pow(1f - t, 3f);
 
-                if (countdownText != null)
+                float currentOvershootScale = step.targetScale * 1.1f;
+                Vector3 currentScaleVector = Vector3.one * currentOvershootScale;
+
+                foreach (var txt in currentStepActiveTexts)
                 {
-                    float currentOvershootScale = step.targetScale * 1.1f;
-                    countdownText.transform.localScale = Vector3.LerpUnclamped(Vector3.zero, Vector3.one * currentOvershootScale, popCurve);
+                    txt.transform.localScale = Vector3.LerpUnclamped(Vector3.zero, currentScaleVector, popCurve);
                 }
                 yield return null;
             }
 
-            if (countdownText != null) countdownText.transform.localScale = Vector3.one * step.targetScale;
+            foreach (var txt in currentStepActiveTexts)
+            {
+                txt.transform.localScale = Vector3.one * step.targetScale;
+            }
             yield return new WaitForSeconds(step.stayDuration);
 
-            if (countdownText != null) countdownText.transform.localScale = Vector3.zero;
+            foreach (var txt in currentStepActiveTexts)
+            {
+                txt.transform.localScale = Vector3.zero;
+                txt.gameObject.SetActive(false);
+            }
         }
-
-        if (countdownText != null) countdownText.gameObject.SetActive(false);
 
         StartGame();
     }
@@ -460,9 +510,6 @@ public class GameManager : MonoBehaviour
         if (clip != null && uiAudioSource != null) uiAudioSource.PlayOneShot(clip, volume);
     }
 
-    // ==========================================
-    // 生成寻址逻辑
-    // ==========================================
     private Vector3 GetValidSpawnPosition()
     {
         Vector3 center = spawnAreaCenter != null ? spawnAreaCenter.position : Vector3.zero;
@@ -497,9 +544,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // ==========================================
-    // 🎬 闪切运镜逻辑
-    // ==========================================
     private void UpdateFlashCutCamera(float deltaTime)
     {
         if (menuCamera == null || player == null) return;
@@ -538,9 +582,6 @@ public class GameManager : MonoBehaviour
         currentDriftDirection = new Vector3(Random.Range(-1f, 1f), Random.Range(0f, 0.2f), Random.Range(-1f, 1f)).normalized;
     }
 
-    // ==========================================
-    // 底层 UI 与控制逻辑
-    // ==========================================
     private void GenerateCinematicGradients()
     {
         int resolution = 256; float solidBlackRatio = 0.35f;
@@ -685,7 +726,6 @@ public class GameManager : MonoBehaviour
 
     private void EliminateCar(GameObject car, string carName)
     {
-        // 【核心修改】：遍历播放列表里配置的所有特效！
         foreach (var vfxConfig in eliminationVFXList)
         {
             if (vfxConfig.vfxPrefab != null)
@@ -801,7 +841,7 @@ public class GameManager : MonoBehaviour
     public void RestartGame()
     {
         Time.timeScale = 1f;
-        AudioListener.pause = false; // 重启游戏时，确保声音恢复正常！
+        AudioListener.pause = false;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
