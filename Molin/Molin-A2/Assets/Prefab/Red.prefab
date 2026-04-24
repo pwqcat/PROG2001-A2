@@ -168,8 +168,8 @@ MonoBehaviour:
   cliffCheckDepth: 2
   obstacleAvoidDistance: 8
   chaseTimeRange: {x: 2, y: 4}
-  retreatTimeRange: {x: 0.5, y: 1.5}
-  repositionTimeRange: {x: 1.5, y: 2.5}
+  retreatTimeRange: {x: 0.5, y: 2}
+  repositionTimeRange: {x: 0, y: 10}
   hitForceThreshold: 15
   fastAcceleration: 40
   fastAccelThreshold: 25

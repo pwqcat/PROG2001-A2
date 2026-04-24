@@ -25,29 +25,20 @@ public class AliveMilestone
 [System.Serializable]
 public class CountdownTextElement
 {
-    [Tooltip("文本内容 (支持 <sprite name=\"X\">)")]
     public string text = "READY";
-    [Tooltip("字体颜色")]
     public Color color = Color.white;
-    [Tooltip("相对中心的偏移位置 (X, Y)")]
     public Vector2 anchoredPosition = Vector2.zero;
 }
 
 [System.Serializable]
 public class CountdownStep
 {
-    [Header("文本组合")]
-    [Tooltip("该阶段同时弹出的所有文本（可无限添加）")]
     public List<CountdownTextElement> textElements = new List<CountdownTextElement>();
-
-    [Header("样式与动画")]
     public TMP_FontAsset customFont;
     public TMP_SpriteAsset customSpriteAsset;
     public float targetScale = 1.0f;
     public float popDuration = 0.25f;
     public float stayDuration = 0.6f;
-
-    [Header("音效")]
     public AudioClip sfx;
     [Range(0f, 1f)] public float sfxVolume = 1f;
     public float sfxDelay = 0f;
@@ -128,10 +119,8 @@ public class GameManager : MonoBehaviour
     };
 
     [Header("🏁 赛前倒计时系统 (Countdown)")]
-    [Tooltip("此 Text 将作为克隆模板，放在屏幕中心即可")]
     public TextMeshProUGUI countdownTextTemplate;
     public List<CountdownStep> countdownSteps = new List<CountdownStep>();
-
     private List<TextMeshProUGUI> countdownTextPool = new List<TextMeshProUGUI>();
 
     [Header("🎦 电影级 UI 动画与遮幅")]
@@ -166,8 +155,11 @@ public class GameManager : MonoBehaviour
     public List<MilestoneSFX> victorySoundEffects = new List<MilestoneSFX>();
     public List<MilestoneSFX> eliminationSoundEffects = new List<MilestoneSFX>();
 
-    [Header("全局大字 (结算)")]
-    public TextMeshProUGUI centerMessageText;
+    [Header("自定义结算 UI (胜利/淘汰)")]
+    public GameObject victoryTextObject;
+    public GameObject eliminationTextObject;
+    public GameObject victoryButtonObject;
+    public GameObject eliminationButtonObject;
 
     private GameObject player;
     private List<GameObject> enemies = new List<GameObject>();
@@ -176,6 +168,8 @@ public class GameManager : MonoBehaviour
     private int lastTotalAlive = -1;
     private Coroutine pulseCoroutine;
     private Vector3 originalAliveTextScale;
+
+    private bool isRestarting = false;
 
     void Awake()
     {
@@ -265,9 +259,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // ==========================================
-    // ⚙️ 弹窗与系统时间/音频管控
-    // ==========================================
     public void OpenSettings()
     {
         if (settingsPanel != null) settingsPanel.SetActive(true);
@@ -276,8 +267,6 @@ public class GameManager : MonoBehaviour
             Time.timeScale = 0f;
             AudioListener.pause = true;
         }
-
-        // Settings 面板设置为 30000 层
         ForceUIOnTop(settingsPanel, 30000);
         UpdateCursorState();
     }
@@ -293,7 +282,6 @@ public class GameManager : MonoBehaviour
     public void OpenHelp()
     {
         if (helpPanel != null) helpPanel.SetActive(true);
-        // Help 面板设置为 30001 层，以防它在 Settings 面板内部被打开时层级冲突
         ForceUIOnTop(helpPanel, 30001);
         UpdateCursorState();
     }
@@ -304,12 +292,10 @@ public class GameManager : MonoBehaviour
         UpdateCursorState();
     }
 
-    // 【核心修复】：双管齐下的层级控制机制
     private void ForceUIOnTop(GameObject panel, int popupSortingOrder)
     {
         if (panel == null) return;
 
-        // 1. 先把主画布提到 20000，确保包括倒计时在内的所有 UI 都能遮住 3D 粒子特效
         Canvas rootCanvas = panel.transform.root.GetComponentInChildren<Canvas>();
         if (rootCanvas != null)
         {
@@ -317,12 +303,10 @@ public class GameManager : MonoBehaviour
             rootCanvas.sortingOrder = 20000;
         }
 
-        // 2. 给当前弹窗单独挂一个子 Canvas，层级提到 30000+，直接凌驾于整个 UI 体系之上！
         Canvas panelCanvas = panel.GetComponent<Canvas>();
         if (panelCanvas == null)
         {
             panelCanvas = panel.AddComponent<Canvas>();
-            // 必须加 GraphicRaycaster，不然挂了 Canvas 后按钮会点不到
             if (panel.GetComponent<GraphicRaycaster>() == null)
             {
                 panel.AddComponent<GraphicRaycaster>();
@@ -332,36 +316,87 @@ public class GameManager : MonoBehaviour
         panelCanvas.sortingOrder = popupSortingOrder;
     }
 
-    // ==========================================
-    // ✨ 特效生命周期接管
-    // ==========================================
-    private IEnumerator HandleVfxLifecycle(GameObject vfxInstance, VfxControlSettings settings)
-    {
-        if (vfxInstance == null) yield break;
 
+    // ==========================================
+    // ✨ 核心修复：特效全生命周期接管与层级下压
+    // ==========================================
+    private void InitializeAndPlayVFX(GameObject vfxInstance, float scale, VfxControlSettings settings, bool pushBehindUI)
+    {
+        if (vfxInstance == null) return;
+
+        vfxInstance.transform.localScale = Vector3.one * scale;
         ParticleSystem[] particles = vfxInstance.GetComponentsInChildren<ParticleSystem>();
 
         foreach (var ps in particles)
         {
+            // 【核心修复】：先强制刹车并清空粒子，这是安全修改随机种子的唯一方法！
+            ps.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+
             var main = ps.main;
+            main.scalingMode = ParticleSystemScalingMode.Hierarchy;
             main.simulationSpeed = settings.playbackSpeed;
+
+            // 只有在需要倒放时，才关闭随机种子以确保轨迹一致
+            if (settings.enableReverse)
+            {
+                ps.useAutoRandomSeed = false;
+            }
+
+            // 参数修改完毕，重新启动该层粒子
+            ps.Play(false);
         }
 
+        if (pushBehindUI)
+        {
+            Renderer[] allRenderers = vfxInstance.GetComponentsInChildren<Renderer>(true);
+            foreach (Renderer r in allRenderers)
+            {
+                r.sortingLayerName = "Default";
+                r.sortingOrder = -32000;
+            }
+        }
+
+        // 启动生命周期控制协程
+        StartCoroutine(HandleVfxLifecycle(vfxInstance, settings, particles));
+    }
+
+    private IEnumerator HandleVfxLifecycle(GameObject vfxInstance, VfxControlSettings settings, ParticleSystem[] particles)
+    {
         if (!settings.enableReverse) yield break;
 
         float halfRealTime = (settings.totalDuration / 2f) / settings.playbackSpeed;
         yield return new WaitForSeconds(halfRealTime);
+
         if (vfxInstance == null) yield break;
 
+        // 暂停自然播放
         foreach (var ps in particles)
         {
-            var main = ps.main;
-            main.simulationSpeed = -settings.playbackSpeed;
+            if (ps != null) ps.Pause(true);
         }
 
-        yield return new WaitForSeconds(halfRealTime);
+        // 手动执行时光倒流
+        float currentSimTime = settings.totalDuration / 2f;
+        while (currentSimTime > 0f)
+        {
+            if (vfxInstance == null) yield break;
+
+            currentSimTime -= Time.deltaTime * settings.playbackSpeed;
+            float timeToSimulate = Mathf.Max(0f, currentSimTime);
+
+            foreach (var ps in particles)
+            {
+                if (ps != null)
+                {
+                    ps.Simulate(timeToSimulate, false, true, false);
+                }
+            }
+            yield return null;
+        }
+
         if (vfxInstance != null) Destroy(vfxInstance);
     }
+
 
     // ==========================================
     // ✨ 相机过渡与异步生成
@@ -373,6 +408,10 @@ public class GameManager : MonoBehaviour
 
         if (menuCamera != null) menuCamera.SetActive(false);
         if (playCamera != null) playCamera.SetActive(true);
+
+        if (hudPanel != null) hudPanel.SetActive(true);
+        lastTotalAlive = -1;
+        UpdateUI(true);
 
         StartCoroutine(SpawnEnemiesRoutine());
 
@@ -392,17 +431,15 @@ public class GameManager : MonoBehaviour
             enemy.transform.position = spawnPos;
             spawnedEnemies.Add(enemy);
 
+            UpdateUI(false);
+
             if (spawnVFX != null)
             {
                 Vector3 vfxPos = spawnPos + spawnVfxOffset;
                 GameObject vfxInstance = Instantiate(spawnVFX, vfxPos, Quaternion.identity);
 
-                vfxInstance.transform.localScale = Vector3.one * spawnVfxScale;
-                foreach (ParticleSystem ps in vfxInstance.GetComponentsInChildren<ParticleSystem>())
-                {
-                    var main = ps.main; main.scalingMode = ParticleSystemScalingMode.Hierarchy;
-                }
-                StartCoroutine(HandleVfxLifecycle(vfxInstance, spawnVfxControl));
+                // 【核心调用】：使用我们新写的超级管理函数处理出生特效
+                InitializeAndPlayVFX(vfxInstance, spawnVfxScale, spawnVfxControl, true);
             }
 
             if (spawnSFX != null && uiAudioSource != null)
@@ -422,9 +459,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // ==========================================
-    // 🏁 倒计时弹字系统 (多元素对象池版)
-    // ==========================================
     private TextMeshProUGUI GetCountdownTextFromPool(int index)
     {
         if (index >= countdownTextPool.Count)
@@ -601,6 +635,7 @@ public class GameManager : MonoBehaviour
     private void InitializeStartMenu()
     {
         currentState = GameState.StartMenu;
+        isRestarting = false;
 
         spawnedEnemies.Clear();
         FreezeAllVehiclesForStart();
@@ -610,7 +645,11 @@ public class GameManager : MonoBehaviour
         if (startMenuPanel != null) startMenuPanel.SetActive(true);
         if (hudPanel != null) hudPanel.SetActive(false);
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
-        if (centerMessageText != null) centerMessageText.gameObject.SetActive(false);
+
+        if (victoryTextObject != null) victoryTextObject.SetActive(false);
+        if (eliminationTextObject != null) eliminationTextObject.SetActive(false);
+        if (victoryButtonObject != null) victoryButtonObject.SetActive(false);
+        if (eliminationButtonObject != null) eliminationButtonObject.SetActive(false);
 
         UpdateCursorState();
         shotTimer = 0f;
@@ -658,7 +697,6 @@ public class GameManager : MonoBehaviour
         if (startMenuPanel != null) startMenuPanel.SetActive(false);
         if (hudPanel != null) hudPanel.SetActive(true);
 
-        UpdateUI(true);
         UpdateCursorState();
     }
 
@@ -733,13 +771,8 @@ public class GameManager : MonoBehaviour
                 Vector3 vfxPos = car.transform.position + vfxConfig.offset;
                 GameObject vfxInstance = Instantiate(vfxConfig.vfxPrefab, vfxPos, Quaternion.identity);
 
-                vfxInstance.transform.localScale = Vector3.one * vfxConfig.scale;
-                foreach (ParticleSystem ps in vfxInstance.GetComponentsInChildren<ParticleSystem>())
-                {
-                    var main = ps.main; main.scalingMode = ParticleSystemScalingMode.Hierarchy;
-                }
-
-                StartCoroutine(HandleVfxLifecycle(vfxInstance, vfxConfig.controlSettings));
+                // 【核心调用】：统一调用处理机制，安全压低层级、应用参数
+                InitializeAndPlayVFX(vfxInstance, vfxConfig.scale, vfxConfig.controlSettings, true);
             }
         }
 
@@ -763,7 +796,8 @@ public class GameManager : MonoBehaviour
     {
         if (aliveCountText != null)
         {
-            int totalAlive = enemies.Count + (player != null ? 1 : 0);
+            int totalAlive = spawnedEnemies.Count + (player != null ? 1 : 0);
+
             if (totalAlive != lastTotalAlive)
             {
                 aliveCountText.text = "ALIVE: " + totalAlive;
@@ -771,6 +805,7 @@ public class GameManager : MonoBehaviour
                 {
                     if (pulseCoroutine != null) StopCoroutine(pulseCoroutine);
                     pulseCoroutine = StartCoroutine(PulseTextRoutine());
+
                     foreach (var m in milestones)
                     {
                         if (totalAlive == m.survivorCount)
@@ -814,7 +849,13 @@ public class GameManager : MonoBehaviour
     {
         currentState = GameState.GameOver;
         if (hudPanel != null) hudPanel.SetActive(false);
-        if (gameOverPanel != null) gameOverPanel.SetActive(true);
+
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(true);
+            ForceUIOnTop(gameOverPanel, 30000);
+        }
+
         UpdateCursorState();
 
         if (uiAudioSource != null)
@@ -830,19 +871,82 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        if (centerMessageText != null)
+        if (victoryTextObject != null) victoryTextObject.SetActive(false);
+        if (eliminationTextObject != null) eliminationTextObject.SetActive(false);
+        if (victoryButtonObject != null) victoryButtonObject.SetActive(false);
+        if (eliminationButtonObject != null) eliminationButtonObject.SetActive(false);
+
+        if (isWin)
         {
-            centerMessageText.gameObject.SetActive(true);
-            centerMessageText.text = isWin ? "VICTORY" : "ELIMINATED";
-            centerMessageText.color = isWin ? new Color(1f, 0.8f, 0f) : new Color(1f, 0.2f, 0.2f);
+            if (victoryTextObject != null) victoryTextObject.SetActive(true);
+            if (victoryButtonObject != null) victoryButtonObject.SetActive(true);
+        }
+        else
+        {
+            if (eliminationTextObject != null) eliminationTextObject.SetActive(true);
+            if (eliminationButtonObject != null) eliminationButtonObject.SetActive(true);
         }
     }
 
     public void RestartGame()
     {
+        if (isRestarting) return;
+        isRestarting = true;
+        StartCoroutine(RestartSequence());
+    }
+
+    private IEnumerator RestartSequence()
+    {
+        GameObject activeBtn = null;
+        if (victoryButtonObject != null && victoryButtonObject.activeInHierarchy) activeBtn = victoryButtonObject;
+        else if (eliminationButtonObject != null && eliminationButtonObject.activeInHierarchy) activeBtn = eliminationButtonObject;
+
+        if (activeBtn != null)
+        {
+            float elapsed = 0f;
+            float duration = 0.2f;
+            Vector3 startScale = activeBtn.transform.localScale;
+            Vector3 targetScale = startScale * 0.85f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = elapsed / duration;
+
+                if (t < 0.5f) activeBtn.transform.localScale = Vector3.Lerp(startScale, targetScale, t * 2f);
+                else activeBtn.transform.localScale = Vector3.Lerp(targetScale, startScale, (t - 0.5f) * 2f);
+
+                yield return null;
+            }
+            activeBtn.transform.localScale = startScale;
+        }
+
         Time.timeScale = 1f;
         AudioListener.pause = false;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    public void PlayGenericButtonBounce(RectTransform btnRect)
+    {
+        if (btnRect != null) StartCoroutine(GenericButtonBounceRoutine(btnRect));
+    }
+
+    private IEnumerator GenericButtonBounceRoutine(RectTransform rect)
+    {
+        float elapsed = 0f;
+        float duration = 0.2f;
+        Vector3 startScale = rect.localScale;
+        Vector3 targetScale = startScale * 0.85f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / duration;
+            if (t < 0.5f) rect.localScale = Vector3.Lerp(startScale, targetScale, t * 2f);
+            else rect.localScale = Vector3.Lerp(targetScale, startScale, (t - 0.5f) * 2f);
+            yield return null;
+        }
+        rect.localScale = startScale;
     }
 
     private void OnDrawGizmosSelected()
