@@ -1739,7 +1739,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &362894534
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2172,115 +2172,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 390326334}
   m_CullTransparentMesh: 1
---- !u!1001 &396122264
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_RootOrder
-      value: 13
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 10000
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 180
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: maxSpeed
-      value: 40
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: lateralGrip
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: coastingDrag
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: speedForMaxTurn
-      value: 80
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: fastAcceleration
-      value: 60
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: hitForceThreshold
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: fastAccelThreshold
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: topEndAcceleration
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: impactThreshold
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: frontalAngleRange
-      value: 45
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: frontalReductionRatio
-      value: 0.3
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: forceMultiplierPerSpeed
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418614, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_Name
-      value: Green
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431433967908619, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_Materials.Array.data[0]
-      value: 
-      objectReference: {fileID: 2100000, guid: 09c973629b337a345bd354f1435c2906, type: 2}
-    m_RemovedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 081b74b0e9c261e4190121524571d923, type: 3}
 --- !u!1 &406580190
 GameObject:
   m_ObjectHideFlags: 0
@@ -21639,6 +21530,203 @@ Transform:
   m_Father: {fileID: 1711993422}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 180, y: 0, z: 0}
+--- !u!1001 &1380301394
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_RootOrder
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 10000
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 180
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: maxSpeed
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: lateralGrip
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: coastingDrag
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: speedForMaxTurn
+      value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: chaseTimeRange.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: chaseTimeRange.y
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: fastAcceleration
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: hitForceThreshold
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: fastAccelThreshold
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: topEndAcceleration
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.idle.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: c502041826854664683f9914f63427b0, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.pitchBase
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: repositionTimeRange.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: repositionTimeRange.y
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.idle.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.maxDistance
+      value: 1000
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.minDistance
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.spatialBlend
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowAccel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: 75fa27e467267c74f91f1f6f4e74ff88, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowDecel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: bb683044c23cd50438d45fe475089c84, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.crossfadeSpeed
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highAccel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: 22cd46996da3b624bb08935264560d8c, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highDecel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: 30ab19edabbfdea499f3db426001e120, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowAccel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowDecel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highAccel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highDecel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.pitchSpeedModifier
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: impactThreshold
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: lightCrashSound
+      value: 
+      objectReference: {fileID: 8300000, guid: a37109c51cd477548ad1c882be3971d5, type: 3}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: lightSoundVolume
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: frontalAngleRange
+      value: 45
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: violentCrashSound
+      value: 
+      objectReference: {fileID: 8300000, guid: 74198389e177d0948b63ca9a3fb22801, type: 3}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: frontalReductionRatio
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: forceMultiplierPerSpeed
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418614, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_Name
+      value: Red (1)
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 081b74b0e9c261e4190121524571d923, type: 3}
 --- !u!1 &1380952269
 GameObject:
   m_ObjectHideFlags: 0
@@ -32188,12 +32276,25 @@ MonoBehaviour:
       enableReverse: 0
       totalDuration: 0
       playbackSpeed: 1
+  trailVFXConfig:
+    enableTrail: 1
+    vfxPrefab: {fileID: 6813416509558619124, guid: 3b7f2c753d435d647a80f1f047a113e3, type: 3}
+    minSpeedToSpawn: 25
+    spawnInterval: 2
+    localOffset: {x: 0, y: 0.5, z: 0}
+    scale: 1
+    controlSettings:
+      enableReverse: 0
+      totalDuration: 2
+      playbackSpeed: 1
   aliveCountText: {fileID: 1380952272}
   killFeedText: {fileID: 1200758834}
   maxFeedLines: 4
   feedStayTime: 3.5
   uiAudioSource: {fileID: 1661747599}
   settingsUIAudioSource: {fileID: 0}
+  idleEngineClip: {fileID: 8300000, guid: c502041826854664683f9914f63427b0, type: 3}
+  idleEngineVolume: 0.15
   pulseScaleMultiplier: 1.5
   pulseDuration: 0.3
   milestones:
@@ -32217,7 +32318,7 @@ MonoBehaviour:
       delay: 0
     - clip: {fileID: 8300000, guid: 76b161aa73c2e8a48a7ffb0e12e7bc5b, type: 3}
       volume: 0.3
-      delay: 0.3
+      delay: 0.5
   victorySoundEffects:
   - clip: {fileID: 8300000, guid: 5db17dcd9925d6148b1eb657e55d020a, type: 3}
     volume: 0.3
@@ -32344,115 +32445,6 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
---- !u!1001 &1666481051
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_RootOrder
-      value: 14
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 10000
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 180
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: maxSpeed
-      value: 40
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: lateralGrip
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: coastingDrag
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: speedForMaxTurn
-      value: 80
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: fastAcceleration
-      value: 60
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: hitForceThreshold
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: fastAccelThreshold
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: topEndAcceleration
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: impactThreshold
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: frontalAngleRange
-      value: 45
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: frontalReductionRatio
-      value: 0.3
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: forceMultiplierPerSpeed
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418614, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_Name
-      value: Blue
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431433967908619, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_Materials.Array.data[0]
-      value: 
-      objectReference: {fileID: 2100000, guid: 6d59e6d27d53ba24eb3b0d2e0fdd702a, type: 2}
-    m_RemovedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 081b74b0e9c261e4190121524571d923, type: 3}
 --- !u!1 &1667354836
 GameObject:
   m_ObjectHideFlags: 0
@@ -40898,115 +40890,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5527826a6315a224d850675a730c4f62, type: 3}
---- !u!1001 &1797915369
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_RootOrder
-      value: 15
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 10000
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 180
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: maxSpeed
-      value: 40
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: lateralGrip
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: coastingDrag
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: speedForMaxTurn
-      value: 80
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: fastAcceleration
-      value: 60
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: hitForceThreshold
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: fastAccelThreshold
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: topEndAcceleration
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: impactThreshold
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: frontalAngleRange
-      value: 45
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: frontalReductionRatio
-      value: 0.3
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: forceMultiplierPerSpeed
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431432769418614, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_Name
-      value: Orange
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129431433967908619, guid: 081b74b0e9c261e4190121524571d923, type: 3}
-      propertyPath: m_Materials.Array.data[0]
-      value: 
-      objectReference: {fileID: 2100000, guid: cabd66681bf00b54fb04a9c8fab8b487, type: 2}
-    m_RemovedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 081b74b0e9c261e4190121524571d923, type: 3}
 --- !u!1 &1806292303
 GameObject:
   m_ObjectHideFlags: 0
@@ -41173,13 +41056,43 @@ MonoBehaviour:
   fastAcceleration: 60
   fastAccelThreshold: 30
   topEndAcceleration: 30
-  maxSpeed: 40
+  maxSpeed: 60
   maxTurnSpeed: 200
   speedForMaxTurn: 80
-  lateralGrip: 2
-  coastingDrag: 4
+  lateralGrip: 1
+  coastingDrag: 2
   downForce: 50
   groundCheckDistance: 0.4
+  engineAudio:
+    enableEngineSounds: 1
+    idle:
+      clip: {fileID: 8300000, guid: c502041826854664683f9914f63427b0, type: 3}
+      volume: 0.2
+    lowAccel:
+      clip: {fileID: 8300000, guid: 75fa27e467267c74f91f1f6f4e74ff88, type: 3}
+      volume: 0.2
+    lowDecel:
+      clip: {fileID: 8300000, guid: bb683044c23cd50438d45fe475089c84, type: 3}
+      volume: 0.2
+    highAccel:
+      clip: {fileID: 8300000, guid: 22cd46996da3b624bb08935264560d8c, type: 3}
+      volume: 0.2
+    highDecel:
+      clip: {fileID: 8300000, guid: 30ab19edabbfdea499f3db426001e120, type: 3}
+      volume: 0.2
+    pitchBase: 1
+    pitchSpeedModifier: 1.5
+    crossfadeSpeed: 4
+    masterVolumeMultiplier: 1
+    spatialBlend: 0
+    minDistance: 4
+    maxDistance: 1000
+  highSpeedCollisionThreshold: 45
+  collisionSfxCooldown: 4
+  enemyKnockedSfx: {fileID: 8300000, guid: 99ab9efd6714356408c751415de79cb0, type: 3}
+  enemyKnockedVolume: 1
+  playerKnockedSfx: {fileID: 8300000, guid: 4bd945cef6173b047b44ee6830558777, type: 3}
+  playerKnockedVolume: 1
 --- !u!54 &1821323226
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -41224,7 +41137,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6784aa11e484a0c44b8eeaafda211cb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  impactThreshold: 20
+  impactThreshold: 25
   forceMultiplierPerSpeed: 2
   frontalReductionRatio: 0.3
   frontalAngleRange: 45
@@ -41233,9 +41146,9 @@ MonoBehaviour:
   collisionCooldown: 0.2
   vfxNormalOffset: 0.1
   vfxExtraOffset: {x: 0, y: 0.4, z: 0}
-  violentCrashSound: {fileID: 0}
-  lightCrashSound: {fileID: 0}
-  lightSoundVolume: 0.5
+  violentCrashSound: {fileID: 8300000, guid: 74198389e177d0948b63ca9a3fb22801, type: 3}
+  lightCrashSound: {fileID: 8300000, guid: a37109c51cd477548ad1c882be3971d5, type: 3}
+  lightSoundVolume: 1
 --- !u!82 &1821323229
 AudioSource:
   m_ObjectHideFlags: 0
@@ -41415,6 +41328,203 @@ MonoBehaviour:
   maxSpeedColor: {r: 2.9960785, g: 0.28235295, b: 0.21960784, a: 1}
   transitionSpeed: 5
   glowCurvePower: 1.8
+--- !u!1001 &1824621534
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_RootOrder
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 10000
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 180
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: maxSpeed
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: lateralGrip
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: coastingDrag
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: speedForMaxTurn
+      value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: chaseTimeRange.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: chaseTimeRange.y
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: fastAcceleration
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: hitForceThreshold
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: fastAccelThreshold
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: topEndAcceleration
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.idle.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: c502041826854664683f9914f63427b0, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.pitchBase
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: repositionTimeRange.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: repositionTimeRange.y
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.idle.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.maxDistance
+      value: 1000
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.minDistance
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.spatialBlend
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowAccel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: 75fa27e467267c74f91f1f6f4e74ff88, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowDecel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: bb683044c23cd50438d45fe475089c84, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.crossfadeSpeed
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highAccel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: 22cd46996da3b624bb08935264560d8c, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highDecel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: 30ab19edabbfdea499f3db426001e120, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowAccel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowDecel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highAccel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highDecel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.pitchSpeedModifier
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: impactThreshold
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: lightCrashSound
+      value: 
+      objectReference: {fileID: 8300000, guid: a37109c51cd477548ad1c882be3971d5, type: 3}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: lightSoundVolume
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: frontalAngleRange
+      value: 45
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: violentCrashSound
+      value: 
+      objectReference: {fileID: 8300000, guid: 74198389e177d0948b63ca9a3fb22801, type: 3}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: frontalReductionRatio
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: forceMultiplierPerSpeed
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418614, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_Name
+      value: Red (3)
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 081b74b0e9c261e4190121524571d923, type: 3}
 --- !u!1001 &1827698072
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -41533,7 +41643,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 673738625}
-  m_RootOrder: 1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -42742,6 +42852,203 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1958184718}
   m_CullTransparentMesh: 1
+--- !u!1001 &1995054223
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_RootOrder
+      value: 14
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 10000
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 180
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418601, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: maxSpeed
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: lateralGrip
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: coastingDrag
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: speedForMaxTurn
+      value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: chaseTimeRange.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: chaseTimeRange.y
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: fastAcceleration
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: hitForceThreshold
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: fastAccelThreshold
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: topEndAcceleration
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.idle.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: c502041826854664683f9914f63427b0, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.pitchBase
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: repositionTimeRange.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: repositionTimeRange.y
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.idle.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.maxDistance
+      value: 1000
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.minDistance
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.spatialBlend
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowAccel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: 75fa27e467267c74f91f1f6f4e74ff88, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowDecel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: bb683044c23cd50438d45fe475089c84, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.crossfadeSpeed
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highAccel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: 22cd46996da3b624bb08935264560d8c, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highDecel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: 30ab19edabbfdea499f3db426001e120, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowAccel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowDecel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highAccel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highDecel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.pitchSpeedModifier
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: impactThreshold
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: lightCrashSound
+      value: 
+      objectReference: {fileID: 8300000, guid: a37109c51cd477548ad1c882be3971d5, type: 3}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: lightSoundVolume
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: frontalAngleRange
+      value: 45
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: violentCrashSound
+      value: 
+      objectReference: {fileID: 8300000, guid: 74198389e177d0948b63ca9a3fb22801, type: 3}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: frontalReductionRatio
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: forceMultiplierPerSpeed
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418614, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: m_Name
+      value: Red (2)
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 081b74b0e9c261e4190121524571d923, type: 3}
 --- !u!1 &1997390103
 GameObject:
   m_ObjectHideFlags: 0
@@ -44592,19 +44899,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
       propertyPath: maxSpeed
-      value: 40
+      value: 60
       objectReference: {fileID: 0}
     - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
       propertyPath: lateralGrip
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
       propertyPath: coastingDrag
-      value: 4
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
       propertyPath: speedForMaxTurn
       value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: chaseTimeRange.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: chaseTimeRange.y
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
       propertyPath: fastAcceleration
@@ -44622,14 +44937,98 @@ PrefabInstance:
       propertyPath: topEndAcceleration
       value: 30
       objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.idle.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: c502041826854664683f9914f63427b0, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.pitchBase
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: repositionTimeRange.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: repositionTimeRange.y
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.idle.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.maxDistance
+      value: 1000
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.minDistance
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.spatialBlend
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowAccel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: 75fa27e467267c74f91f1f6f4e74ff88, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowDecel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: bb683044c23cd50438d45fe475089c84, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.crossfadeSpeed
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highAccel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: 22cd46996da3b624bb08935264560d8c, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highDecel.clip
+      value: 
+      objectReference: {fileID: 8300000, guid: 30ab19edabbfdea499f3db426001e120, type: 3}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowAccel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.lowDecel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highAccel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.highDecel.volume
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418603, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: engineAudio.pitchSpeedModifier
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
       propertyPath: impactThreshold
-      value: 20
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: lightCrashSound
+      value: 
+      objectReference: {fileID: 8300000, guid: a37109c51cd477548ad1c882be3971d5, type: 3}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: lightSoundVolume
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
       propertyPath: frontalAngleRange
       value: 45
       objectReference: {fileID: 0}
+    - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
+      propertyPath: violentCrashSound
+      value: 
+      objectReference: {fileID: 8300000, guid: 74198389e177d0948b63ca9a3fb22801, type: 3}
     - target: {fileID: 8129431432769418612, guid: 081b74b0e9c261e4190121524571d923, type: 3}
       propertyPath: frontalReductionRatio
       value: 0.3

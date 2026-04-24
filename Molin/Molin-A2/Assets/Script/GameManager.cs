@@ -61,6 +61,22 @@ public class EliminationVFXConfig
     public VfxControlSettings controlSettings;
 }
 
+[System.Serializable]
+public class TrailVFXConfig
+{
+    public bool enableTrail = true;
+    [Tooltip("拖尾/烟雾特效预制体")]
+    public GameObject vfxPrefab;
+    [Tooltip("触发特效的最低速度限制")]
+    public float minSpeedToSpawn = 15f;
+    [Tooltip("生成间隔时间(秒)")]
+    public float spawnInterval = 0.2f;
+    [Tooltip("相对车辆的偏移位置(例如车尾: X:0, Y:0.2, Z:-1.5)")]
+    public Vector3 localOffset = new Vector3(0f, 0.2f, -1.5f);
+    public float scale = 1.0f;
+    public VfxControlSettings controlSettings;
+}
+
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
@@ -74,7 +90,6 @@ public class GameManager : MonoBehaviour
     public GameObject helpPanel;
     public bool IsAnyPopupOpen => (settingsPanel != null && settingsPanel.activeSelf) || (helpPanel != null && helpPanel.activeSelf);
 
-    [Tooltip("点击返回主菜单时加载的场景名称")]
     public string mainMenuSceneName = "MainMenu";
 
     [Header("✨ 动态生成 (传送登场) 系统")]
@@ -133,7 +148,6 @@ public class GameManager : MonoBehaviour
     public RawImage bottomCinematicBar;
     public float animationDuration = 0.8f;
 
-    [Tooltip("按空格开始的提示文字")]
     public TextMeshProUGUI pressSpaceText;
     public float pressSpacePulseSpeed = 3f;
 
@@ -145,14 +159,23 @@ public class GameManager : MonoBehaviour
     public float deathYThreshold = -5f;
     public List<EliminationVFXConfig> eliminationVFXList = new List<EliminationVFXConfig>();
 
+    [Header("💨 高速拖尾/烟雾特效规则")]
+    public TrailVFXConfig trailVFXConfig;
+    private Dictionary<GameObject, float> carTrailTimers = new Dictionary<GameObject, float>();
+
     [Header("HUD 数据与动态反馈 (Juice)")]
     public TextMeshProUGUI aliveCountText;
     public TextMeshProUGUI killFeedText;
     public int maxFeedLines = 4;
     public float feedStayTime = 3.5f;
 
+    [Header("🎵 引擎与环境音效")]
     public AudioSource uiAudioSource;
     public AudioSource settingsUIAudioSource;
+    [Tooltip("主界面车辆怠速循环音效")]
+    public AudioClip idleEngineClip;
+    [Range(0f, 1f)] public float idleEngineVolume = 0.5f;
+    private AudioSource ambientAudioSource;
 
     public float pulseScaleMultiplier = 1.5f;
     public float pulseDuration = 0.3f;
@@ -177,8 +200,6 @@ public class GameManager : MonoBehaviour
     private Vector3 originalAliveTextScale;
 
     private bool isRestarting = false;
-
-    // 【核心新增】：用于记录打开 Help 时的来源面板
     private bool returnToSettingsAfterHelp = false;
 
     void Awake()
@@ -193,6 +214,12 @@ public class GameManager : MonoBehaviour
         {
             settingsUIAudioSource.ignoreListenerPause = true;
         }
+
+        // 动态创建用于播放怠速环境音的 AudioSource，使其独立于 UI 音效
+        ambientAudioSource = gameObject.AddComponent<AudioSource>();
+        ambientAudioSource.loop = true;
+        ambientAudioSource.playOnAwake = false;
+        ambientAudioSource.spatialBlend = 0f; // 2D 声音，确保在主界面无论相机在哪都能清晰听到
 
         CinemachineCore.GetInputAxis = CustomCinemachineInput;
     }
@@ -260,6 +287,9 @@ public class GameManager : MonoBehaviour
                     currentState = GameState.MenuTransition;
                     if (pressSpaceText != null) pressSpaceText.gameObject.SetActive(false);
                     UpdateCursorState();
+
+                    // 平滑淡出怠速音效
+                    StartCoroutine(FadeOutAmbientAudio(animationDuration));
                     StartCoroutine(PlayMenuExitAnimation());
                 }
                 break;
@@ -274,12 +304,81 @@ public class GameManager : MonoBehaviour
 
             case GameState.Playing:
                 CheckEliminations();
+                UpdateTrailVFX();
                 break;
         }
     }
 
     // ==========================================
-    // ⚙️ 弹窗与设置核心功能 (带面板路由逻辑)
+    // 🎵 怠速声音淡出逻辑
+    // ==========================================
+    private IEnumerator FadeOutAmbientAudio(float duration)
+    {
+        if (ambientAudioSource == null || !ambientAudioSource.isPlaying) yield break;
+
+        float startVolume = ambientAudioSource.volume;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            ambientAudioSource.volume = Mathf.Lerp(startVolume, 0f, elapsed / duration);
+            yield return null;
+        }
+
+        ambientAudioSource.Stop();
+        ambientAudioSource.volume = startVolume; // 重置为下一次加载做准备
+    }
+
+    // ==========================================
+    // 💨 拖尾特效中央管理系统
+    // ==========================================
+    private void UpdateTrailVFX()
+    {
+        if (!trailVFXConfig.enableTrail || trailVFXConfig.vfxPrefab == null) return;
+
+        if (player != null && player.activeInHierarchy)
+        {
+            ProcessCarTrail(player);
+        }
+
+        foreach (var enemy in spawnedEnemies)
+        {
+            if (enemy != null && enemy.activeInHierarchy)
+            {
+                ProcessCarTrail(enemy);
+            }
+        }
+    }
+
+    private void ProcessCarTrail(GameObject car)
+    {
+        Rigidbody rb = car.GetComponent<Rigidbody>();
+        if (rb == null) return;
+
+        if (rb.velocity.magnitude >= trailVFXConfig.minSpeedToSpawn)
+        {
+            if (!carTrailTimers.ContainsKey(car))
+            {
+                carTrailTimers[car] = 0f;
+            }
+
+            carTrailTimers[car] += Time.deltaTime;
+
+            if (carTrailTimers[car] >= trailVFXConfig.spawnInterval)
+            {
+                carTrailTimers[car] = 0f;
+
+                Vector3 spawnPos = car.transform.position + car.transform.rotation * trailVFXConfig.localOffset;
+                GameObject vfxInstance = Instantiate(trailVFXConfig.vfxPrefab, spawnPos, Quaternion.identity);
+
+                InitializeAndPlayVFX(vfxInstance, trailVFXConfig.scale, trailVFXConfig.controlSettings, true);
+            }
+        }
+    }
+
+    // ==========================================
+    // ⚙️ 弹窗与设置核心功能
     // ==========================================
     private IEnumerator ExecuteAfterBounce(RectTransform rect, System.Action action)
     {
@@ -330,17 +429,14 @@ public class GameManager : MonoBehaviour
     {
         StartCoroutine(ExecuteAfterBounce(btnRect, () =>
         {
-            // 判定并记录：是否是从 Settings 界面打开的
             returnToSettingsAfterHelp = (settingsPanel != null && settingsPanel.activeSelf);
 
             if (returnToSettingsAfterHelp)
             {
-                // 若从设置面板打开，隐藏设置面板
                 settingsPanel.SetActive(false);
             }
             else if (currentState != GameState.StartMenu && currentState != GameState.GameOver)
             {
-                // 若直接从游戏中打开，执行全局冻结
                 Time.timeScale = 0f;
                 AudioListener.pause = true;
             }
@@ -359,14 +455,12 @@ public class GameManager : MonoBehaviour
 
             if (returnToSettingsAfterHelp)
             {
-                // 回退到设置界面（保持游戏冻结状态不变）
                 if (settingsPanel != null) settingsPanel.SetActive(true);
                 ForceUIOnTop(settingsPanel, 30000);
                 returnToSettingsAfterHelp = false;
             }
             else
             {
-                // 若无父级面板，且不在菜单/结算页，则恢复游戏流速
                 if (currentState != GameState.StartMenu && currentState != GameState.GameOver)
                 {
                     Time.timeScale = 1f;
@@ -740,6 +834,8 @@ public class GameManager : MonoBehaviour
         isRestarting = false;
 
         spawnedEnemies.Clear();
+        carTrailTimers.Clear();
+
         FreezeAllVehiclesForStart();
 
         if (playCamera != null) playCamera.SetActive(false);
@@ -754,6 +850,14 @@ public class GameManager : MonoBehaviour
         if (eliminationButtonObject != null) eliminationButtonObject.SetActive(false);
 
         if (pressSpaceText != null) pressSpaceText.gameObject.SetActive(true);
+
+        // 初始化时播放怠速音效
+        if (idleEngineClip != null && ambientAudioSource != null)
+        {
+            ambientAudioSource.clip = idleEngineClip;
+            ambientAudioSource.volume = idleEngineVolume;
+            ambientAudioSource.Play();
+        }
 
         UpdateCursorState();
         shotTimer = 0f;
@@ -879,6 +983,8 @@ public class GameManager : MonoBehaviour
         }
 
         ShowKillFeed($"{carName} fell out");
+
+        if (carTrailTimers.ContainsKey(car)) carTrailTimers.Remove(car);
         spawnedEnemies.Remove(car);
         Destroy(car);
     }
