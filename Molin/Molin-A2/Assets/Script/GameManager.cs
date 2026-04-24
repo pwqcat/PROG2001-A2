@@ -74,6 +74,9 @@ public class GameManager : MonoBehaviour
     public GameObject helpPanel;
     public bool IsAnyPopupOpen => (settingsPanel != null && settingsPanel.activeSelf) || (helpPanel != null && helpPanel.activeSelf);
 
+    [Tooltip("点击返回主菜单时加载的场景名称（请确保该场景已加入 Build Settings）")]
+    public string mainMenuSceneName = "MainMenu";
+
     [Header("✨ 动态生成 (传送登场) 系统")]
     public GameObject spawnVFX;
     public float spawnVfxScale = 1.5f;
@@ -259,6 +262,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // ==========================================
+    // ⚙️ 弹窗与设置核心功能
+    // ==========================================
     public void OpenSettings()
     {
         if (settingsPanel != null) settingsPanel.SetActive(true);
@@ -292,6 +298,29 @@ public class GameManager : MonoBehaviour
         UpdateCursorState();
     }
 
+    /// <summary>
+    /// 控制全局主音量，范围限制在 0.0 到 1.0 之间
+    /// </summary>
+    public void SetMasterVolume(float volume)
+    {
+        AudioListener.volume = Mathf.Clamp01(volume);
+    }
+
+    /// <summary>
+    /// 退出当前游玩逻辑并加载主菜单场景
+    /// </summary>
+    public void LoadMainMenuScene()
+    {
+        if (isRestarting) return;
+        isRestarting = true;
+
+        // 必须在加载场景前重置状态，防止下一个场景陷入时间冻结
+        Time.timeScale = 1f;
+        AudioListener.pause = false;
+
+        SceneManager.LoadScene(mainMenuSceneName);
+    }
+
     private void ForceUIOnTop(GameObject panel, int popupSortingOrder)
     {
         if (panel == null) return;
@@ -316,10 +345,6 @@ public class GameManager : MonoBehaviour
         panelCanvas.sortingOrder = popupSortingOrder;
     }
 
-
-    // ==========================================
-    // ✨ 核心修复：特效全生命周期接管与层级下压
-    // ==========================================
     private void InitializeAndPlayVFX(GameObject vfxInstance, float scale, VfxControlSettings settings, bool pushBehindUI)
     {
         if (vfxInstance == null) return;
@@ -329,20 +354,16 @@ public class GameManager : MonoBehaviour
 
         foreach (var ps in particles)
         {
-            // 【核心修复】：先强制刹车并清空粒子，这是安全修改随机种子的唯一方法！
             ps.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
-
             var main = ps.main;
             main.scalingMode = ParticleSystemScalingMode.Hierarchy;
             main.simulationSpeed = settings.playbackSpeed;
 
-            // 只有在需要倒放时，才关闭随机种子以确保轨迹一致
             if (settings.enableReverse)
             {
                 ps.useAutoRandomSeed = false;
             }
 
-            // 参数修改完毕，重新启动该层粒子
             ps.Play(false);
         }
 
@@ -356,7 +377,6 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // 启动生命周期控制协程
         StartCoroutine(HandleVfxLifecycle(vfxInstance, settings, particles));
     }
 
@@ -369,13 +389,11 @@ public class GameManager : MonoBehaviour
 
         if (vfxInstance == null) yield break;
 
-        // 暂停自然播放
         foreach (var ps in particles)
         {
             if (ps != null) ps.Pause(true);
         }
 
-        // 手动执行时光倒流
         float currentSimTime = settings.totalDuration / 2f;
         while (currentSimTime > 0f)
         {
@@ -396,7 +414,6 @@ public class GameManager : MonoBehaviour
 
         if (vfxInstance != null) Destroy(vfxInstance);
     }
-
 
     // ==========================================
     // ✨ 相机过渡与异步生成
@@ -437,8 +454,6 @@ public class GameManager : MonoBehaviour
             {
                 Vector3 vfxPos = spawnPos + spawnVfxOffset;
                 GameObject vfxInstance = Instantiate(spawnVFX, vfxPos, Quaternion.identity);
-
-                // 【核心调用】：使用我们新写的超级管理函数处理出生特效
                 InitializeAndPlayVFX(vfxInstance, spawnVfxScale, spawnVfxControl, true);
             }
 
@@ -770,8 +785,6 @@ public class GameManager : MonoBehaviour
             {
                 Vector3 vfxPos = car.transform.position + vfxConfig.offset;
                 GameObject vfxInstance = Instantiate(vfxConfig.vfxPrefab, vfxPos, Quaternion.identity);
-
-                // 【核心调用】：统一调用处理机制，安全压低层级、应用参数
                 InitializeAndPlayVFX(vfxInstance, vfxConfig.scale, vfxConfig.controlSettings, true);
             }
         }
