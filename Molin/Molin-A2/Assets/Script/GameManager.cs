@@ -74,7 +74,7 @@ public class GameManager : MonoBehaviour
     public GameObject helpPanel;
     public bool IsAnyPopupOpen => (settingsPanel != null && settingsPanel.activeSelf) || (helpPanel != null && helpPanel.activeSelf);
 
-    [Tooltip("点击返回主菜单时加载的场景名称（请确保该场景已加入 Build Settings）")]
+    [Tooltip("点击返回主菜单时加载的场景名称")]
     public string mainMenuSceneName = "MainMenu";
 
     [Header("✨ 动态生成 (传送登场) 系统")]
@@ -133,6 +133,10 @@ public class GameManager : MonoBehaviour
     public RawImage bottomCinematicBar;
     public float animationDuration = 0.8f;
 
+    [Tooltip("按空格开始的提示文字")]
+    public TextMeshProUGUI pressSpaceText;
+    public float pressSpacePulseSpeed = 3f;
+
     [Header("UI 面板统筹")]
     public GameObject hudPanel;
     public GameObject gameOverPanel;
@@ -173,6 +177,9 @@ public class GameManager : MonoBehaviour
     private Vector3 originalAliveTextScale;
 
     private bool isRestarting = false;
+
+    // 【核心新增】：用于记录打开 Help 时的来源面板
+    private bool returnToSettingsAfterHelp = false;
 
     void Awake()
     {
@@ -231,8 +238,8 @@ public class GameManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if (helpPanel != null && helpPanel.activeSelf) CloseHelp();
-            else if (settingsPanel != null && settingsPanel.activeSelf) CloseSettings();
+            if (helpPanel != null && helpPanel.activeSelf) CloseHelp(null);
+            else if (settingsPanel != null && settingsPanel.activeSelf) CloseSettings(null);
             else if (currentState != GameState.GameOver) OpenSettings();
         }
 
@@ -240,9 +247,18 @@ public class GameManager : MonoBehaviour
         {
             case GameState.StartMenu:
                 UpdateFlashCutCamera(Time.unscaledDeltaTime);
+
+                if (pressSpaceText != null)
+                {
+                    Color c = pressSpaceText.color;
+                    c.a = (Mathf.Sin(Time.unscaledTime * pressSpacePulseSpeed) + 1f) / 2f;
+                    pressSpaceText.color = c;
+                }
+
                 if (Input.GetKeyDown(KeyCode.Space) && !IsAnyPopupOpen)
                 {
                     currentState = GameState.MenuTransition;
+                    if (pressSpaceText != null) pressSpaceText.gameObject.SetActive(false);
                     UpdateCursorState();
                     StartCoroutine(PlayMenuExitAnimation());
                 }
@@ -263,8 +279,30 @@ public class GameManager : MonoBehaviour
     }
 
     // ==========================================
-    // ⚙️ 弹窗与设置核心功能
+    // ⚙️ 弹窗与设置核心功能 (带面板路由逻辑)
     // ==========================================
+    private IEnumerator ExecuteAfterBounce(RectTransform rect, System.Action action)
+    {
+        if (rect != null)
+        {
+            float elapsed = 0f;
+            float duration = 0.2f;
+            Vector3 startScale = rect.localScale;
+            Vector3 targetScale = startScale * 0.85f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = elapsed / duration;
+                if (t < 0.5f) rect.localScale = Vector3.LerpUnclamped(startScale, targetScale, t * 2f);
+                else rect.localScale = Vector3.LerpUnclamped(targetScale, startScale, (t - 0.5f) * 2f);
+                yield return null;
+            }
+            rect.localScale = startScale;
+        }
+        action?.Invoke();
+    }
+
     public void OpenSettings()
     {
         if (settingsPanel != null) settingsPanel.SetActive(true);
@@ -277,48 +315,97 @@ public class GameManager : MonoBehaviour
         UpdateCursorState();
     }
 
-    public void CloseSettings()
+    public void CloseSettings(RectTransform btnRect)
     {
-        if (settingsPanel != null) settingsPanel.SetActive(false);
-        Time.timeScale = 1f;
-        AudioListener.pause = false;
-        UpdateCursorState();
+        StartCoroutine(ExecuteAfterBounce(btnRect, () =>
+        {
+            if (settingsPanel != null) settingsPanel.SetActive(false);
+            Time.timeScale = 1f;
+            AudioListener.pause = false;
+            UpdateCursorState();
+        }));
     }
 
-    public void OpenHelp()
+    public void OpenHelp(RectTransform btnRect)
     {
-        if (helpPanel != null) helpPanel.SetActive(true);
-        ForceUIOnTop(helpPanel, 30001);
-        UpdateCursorState();
+        StartCoroutine(ExecuteAfterBounce(btnRect, () =>
+        {
+            // 判定并记录：是否是从 Settings 界面打开的
+            returnToSettingsAfterHelp = (settingsPanel != null && settingsPanel.activeSelf);
+
+            if (returnToSettingsAfterHelp)
+            {
+                // 若从设置面板打开，隐藏设置面板
+                settingsPanel.SetActive(false);
+            }
+            else if (currentState != GameState.StartMenu && currentState != GameState.GameOver)
+            {
+                // 若直接从游戏中打开，执行全局冻结
+                Time.timeScale = 0f;
+                AudioListener.pause = true;
+            }
+
+            if (helpPanel != null) helpPanel.SetActive(true);
+            ForceUIOnTop(helpPanel, 30001);
+            UpdateCursorState();
+        }));
     }
 
-    public void CloseHelp()
+    public void CloseHelp(RectTransform btnRect)
     {
-        if (helpPanel != null) helpPanel.SetActive(false);
-        UpdateCursorState();
+        StartCoroutine(ExecuteAfterBounce(btnRect, () =>
+        {
+            if (helpPanel != null) helpPanel.SetActive(false);
+
+            if (returnToSettingsAfterHelp)
+            {
+                // 回退到设置界面（保持游戏冻结状态不变）
+                if (settingsPanel != null) settingsPanel.SetActive(true);
+                ForceUIOnTop(settingsPanel, 30000);
+                returnToSettingsAfterHelp = false;
+            }
+            else
+            {
+                // 若无父级面板，且不在菜单/结算页，则恢复游戏流速
+                if (currentState != GameState.StartMenu && currentState != GameState.GameOver)
+                {
+                    Time.timeScale = 1f;
+                    AudioListener.pause = false;
+                }
+            }
+            UpdateCursorState();
+        }));
     }
 
-    /// <summary>
-    /// 控制全局主音量，范围限制在 0.0 到 1.0 之间
-    /// </summary>
     public void SetMasterVolume(float volume)
     {
         AudioListener.volume = Mathf.Clamp01(volume);
     }
 
-    /// <summary>
-    /// 退出当前游玩逻辑并加载主菜单场景
-    /// </summary>
-    public void LoadMainMenuScene()
+    public void LoadMainMenuScene(RectTransform btnRect)
     {
         if (isRestarting) return;
         isRestarting = true;
 
-        // 必须在加载场景前重置状态，防止下一个场景陷入时间冻结
-        Time.timeScale = 1f;
-        AudioListener.pause = false;
+        StartCoroutine(ExecuteAfterBounce(btnRect, () =>
+        {
+            Time.timeScale = 1f;
+            AudioListener.pause = false;
+            SceneManager.LoadScene(mainMenuSceneName);
+        }));
+    }
 
-        SceneManager.LoadScene(mainMenuSceneName);
+    public void RestartGame(RectTransform btnRect)
+    {
+        if (isRestarting) return;
+        isRestarting = true;
+
+        StartCoroutine(ExecuteAfterBounce(btnRect, () =>
+        {
+            Time.timeScale = 1f;
+            AudioListener.pause = false;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }));
     }
 
     private void ForceUIOnTop(GameObject panel, int popupSortingOrder)
@@ -666,6 +753,8 @@ public class GameManager : MonoBehaviour
         if (victoryButtonObject != null) victoryButtonObject.SetActive(false);
         if (eliminationButtonObject != null) eliminationButtonObject.SetActive(false);
 
+        if (pressSpaceText != null) pressSpaceText.gameObject.SetActive(true);
+
         UpdateCursorState();
         shotTimer = 0f;
         StartCoroutine(PlayMenuEnterAnimation());
@@ -899,44 +988,6 @@ public class GameManager : MonoBehaviour
             if (eliminationTextObject != null) eliminationTextObject.SetActive(true);
             if (eliminationButtonObject != null) eliminationButtonObject.SetActive(true);
         }
-    }
-
-    public void RestartGame()
-    {
-        if (isRestarting) return;
-        isRestarting = true;
-        StartCoroutine(RestartSequence());
-    }
-
-    private IEnumerator RestartSequence()
-    {
-        GameObject activeBtn = null;
-        if (victoryButtonObject != null && victoryButtonObject.activeInHierarchy) activeBtn = victoryButtonObject;
-        else if (eliminationButtonObject != null && eliminationButtonObject.activeInHierarchy) activeBtn = eliminationButtonObject;
-
-        if (activeBtn != null)
-        {
-            float elapsed = 0f;
-            float duration = 0.2f;
-            Vector3 startScale = activeBtn.transform.localScale;
-            Vector3 targetScale = startScale * 0.85f;
-
-            while (elapsed < duration)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float t = elapsed / duration;
-
-                if (t < 0.5f) activeBtn.transform.localScale = Vector3.Lerp(startScale, targetScale, t * 2f);
-                else activeBtn.transform.localScale = Vector3.Lerp(targetScale, startScale, (t - 0.5f) * 2f);
-
-                yield return null;
-            }
-            activeBtn.transform.localScale = startScale;
-        }
-
-        Time.timeScale = 1f;
-        AudioListener.pause = false;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     public void PlayGenericButtonBounce(RectTransform btnRect)

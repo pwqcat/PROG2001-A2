@@ -153,7 +153,6 @@ public class EnemyAIController : MonoBehaviour
         MoveAndSteer(targetDirection, isAvoidingCliff);
     }
 
-    // --- 新增：大逃杀全域索敌机制 ---
     private void FindBestTarget()
     {
         // 寻找所有的玩家和其他敌人
@@ -332,7 +331,8 @@ public class EnemyAIController : MonoBehaviour
             float speedFactor = Mathf.Clamp01(currentSpeed / speedForMaxTurn);
             float turnMultiplier = Mathf.Max(speedFactor, 0.2f);
 
-            float currentTurnSpeed = cliffDanger ? turnSpeed * 3.0f : turnSpeed * turnMultiplier;
+            // 【已修复】：移除了悬崖状态下的强制 3 倍转弯速度
+            float currentTurnSpeed = turnSpeed * turnMultiplier;
             Quaternion newRotation = Quaternion.RotateTowards(rb.rotation, targetRotation, currentTurnSpeed * Time.fixedDeltaTime);
             rb.MoveRotation(newRotation);
         }
